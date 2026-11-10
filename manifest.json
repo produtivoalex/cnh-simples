@@ -1,0 +1,24 @@
+{
+  "name": "CNH Simples - Preparatório Oficial CNH",
+  "short_name": "CNH Simples",
+  "description": "App preparatório completo para a prova teórica da CNH no Brasil com questões oficiais do Senatran",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#2563EB",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
