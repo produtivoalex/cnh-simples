@@ -1,15 +1,19 @@
-const CACHE_NAME = 'cnh-simples-v4';
+const CACHE_NAME = 'cnh-simples-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
+  './js/audio.js',
   './data/questions.js',
   './data/plates.js',
   './manifest.json',
   './assets/icons/favicon.png',
   './assets/icons/icon-192.png',
-  './assets/icons/icon-512.png'
+  './assets/icons/icon-512.png',
+  './assets/illustrations/bg-city-highway.svg',
+  './assets/illustrations/bg-intersection.svg',
+  './assets/illustrations/bg-roundabout.svg'
 ];
 
 self.addEventListener('install', (event) => {

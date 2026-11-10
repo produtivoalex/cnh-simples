@@ -75,3 +75,4 @@
   <!-- Ambient Light Halo -->
   <circle cx="400" cy="370" r="140" fill="url(#lightBeam)" opacity="0.3"/>
 </svg>
+

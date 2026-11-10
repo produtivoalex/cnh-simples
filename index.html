@@ -7,7 +7,7 @@
   
   <!-- PWA & Mobile Meta Tags -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#080C14">
+  <meta name="theme-color" content="#070B12">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CNH Simples">
@@ -19,7 +19,7 @@
 <body>
   <div class="app-shell">
     
-    <!-- Header com Nível e XP -->
+    <!-- Header com Nível e XP (Verde & Ouro) -->
     <header class="top-nav">
       <div class="brand" onclick="window.cnhApp.switchView('home')">
         <span class="brand-dot"></span>
@@ -58,7 +58,7 @@
           <div class="level-meta">
             <div class="level-title">
               <span id="level-title">Novato do Asfalto</span>
-              <span id="xp-text" style="color: var(--accent-light); font-size: 0.75rem;">0 / 100 XP</span>
+              <span id="xp-text" style="color: #34D399; font-size: 0.75rem;">0 / 100 XP</span>
             </div>
             <div class="xp-bar">
               <div id="xp-fill" class="xp-fill"></div>
@@ -86,14 +86,14 @@
 
           <button class="btn-play-primary" onclick="window.cnhApp.startSession('Treino Inteligente')">
             <span>Iniciar Treino Desafio</span>
-            <span>⚡</span>
+            <span>🚗💨</span>
           </button>
         </div>
 
         <!-- Modos Específicos -->
         <div class="modes-title">
           <span>Modos de Treino</span>
-          <span style="color: var(--accent-light);">1.500 Questões</span>
+          <span style="color: #34D399;">1.500 Questões</span>
         </div>
 
         <div class="modes-grid">
@@ -171,7 +171,7 @@
         <!-- Drawer de Feedback -->
         <div id="feedback-box" class="feedback-box" style="display: none;">
           <div id="feedback-status" class="feedback-status correct">
-            ✨ Resposta Correta!
+            🚗 Bi-bi! Resposta Correta!
           </div>
           <div id="feedback-explanation" class="feedback-explanation"></div>
           <div id="feedback-repeat-notice" class="feedback-repeat-notice" style="display: none;"></div>
@@ -183,7 +183,7 @@
       <section id="view-placas" class="view">
         <div class="modes-title" style="margin-bottom: 10px;">
           <span>Catálogo de Placas</span>
-          <span style="color: var(--accent-light);">146 Placas</span>
+          <span style="color: #34D399;">146 Placas</span>
         </div>
 
         <div class="plates-tab-filter">
@@ -200,7 +200,7 @@
       <section id="view-conquistas" class="view">
         <div class="modes-title">
           <span>Missões & Conquistas</span>
-          <span style="color: #C4B5FD;">Recompensas em XP</span>
+          <span style="color: #34D399;">Recompensas em XP</span>
         </div>
         <div id="missions-list"></div>
       </section>
@@ -214,7 +214,7 @@
 
           <div class="result-kpi-row">
             <div class="kpi-card">
-              <div id="kpi-acertos" class="kpi-num" style="color: var(--success);">18</div>
+              <div id="kpi-acertos" class="kpi-num" style="color: var(--brazil-green);">18</div>
               <div class="kpi-lbl">Acertos</div>
             </div>
             <div class="kpi-card">
@@ -222,7 +222,7 @@
               <div class="kpi-lbl">Erros Fixados</div>
             </div>
             <div class="kpi-card">
-              <div id="kpi-tempo" class="kpi-num" style="color: var(--accent-light);">04:20</div>
+              <div id="kpi-tempo" class="kpi-num" style="color: #FBBF24;">04:20</div>
               <div class="kpi-lbl">Tempo Total</div>
             </div>
           </div>
@@ -257,11 +257,12 @@
     </nav>
   </div>
 
-  <!-- Databases -->
+  <!-- Databases & Traffic Audio Synthesis -->
   <script src="data/plates.js"></script>
   <script src="data/questions.js"></script>
+  <script src="js/audio.js"></script>
   
-  <!-- App Engine v3 -->
+  <!-- App Engine v4 -->
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,18 +1,17 @@
-// CNH Simples - Engine v3 (Achievements, Missions, XP & Levels, Pausable Timer, Pure Placas Study)
+// CNH Simples - Engine v4 (Brazilian Traffic Palette, Traffic Audio SFX, Achievements, Pausable Timer)
 
 (function () {
   'use strict';
 
-  const STORAGE_KEY_STATS = 'cnh_stats_v3';
-  const STORAGE_KEY_SESSION = 'cnh_active_session_v3';
-  const STORAGE_KEY_DIFFICULTY = 'cnh_user_difficulty_v3';
-  const STORAGE_KEY_ACHIEVEMENTS = 'cnh_achievements_v3';
+  const STORAGE_KEY_STATS = 'cnh_stats_v4';
+  const STORAGE_KEY_SESSION = 'cnh_active_session_v4';
+  const STORAGE_KEY_DIFFICULTY = 'cnh_user_difficulty_v4';
+  const STORAGE_KEY_ACHIEVEMENTS = 'cnh_achievements_v4';
 
-  // State
   const state = {
     questions: window.QUESTIONS_DATABASE || [],
     plates: window.PLATES_DATABASE || {},
-    selectedSize: 20, // default 10, 20 or 30
+    selectedSize: 20,
     userStats: {
       streak: 1,
       xp: 0,
@@ -21,81 +20,40 @@
       totalCorrect: 0,
       sessionsCompleted: 0
     },
-    // Map of questionId -> failCount
     userDifficulty: {},
-    // Completed achievements list
     achievements: [],
-    // Current active session
     session: null,
-    // Timer interval ID
     timerInterval: null
   };
 
-  // Missions & Achievements Definitions
   const ACHIEVEMENTS_DEF = [
     { id: 'first_play', title: 'Primeira Partida', desc: 'Completou seu primeiro treino', icon: '🎯', xp: 50 },
     { id: 'streak_3', title: 'Foco Total', desc: 'Manteve 3 dias seguidos de estudo', icon: '🔥', xp: 100 },
     { id: 'master_10', title: 'Gabaritando', desc: 'Acertou 10 questões seguidas', icon: '⚡', xp: 150 },
-    { id: 'plates_explorer', title: 'Mestre das Placas', desc: 'Estudou 30 placas no modo específico', icon: '🛑', xp: 100 },
+    { id: 'plates_explorer', title: 'Mestre das Placas', desc: 'Estudou no modo exclusivo de placas', icon: '🛑', xp: 100 },
     { id: 'trap_slayer', title: 'Caçador de Pegadinhas', desc: 'Acertou 15 pegadinhas do Detran', icon: '🛡️', xp: 200 },
     { id: 'speed_demon', title: 'Rápido no Gatilho', desc: 'Completou um treino de 10 questões', icon: '⏱️', xp: 80 }
   ];
 
-  // Sound effects via Web Audio API
+  // Sounds (Uses trafficAudio if available, fallback to WebAudio)
   const soundfx = {
-    ctx: null,
-    init() {
-      if (!this.ctx) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) this.ctx = new AudioCtx();
+    playCorrect() {
+      if (window.trafficAudio) {
+        window.trafficAudio.playCarHorn();
       }
     },
-    playCorrect() {
-      try {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now);
-        osc.frequency.setValueAtTime(659.25, now + 0.08);
-        osc.frequency.setValueAtTime(783.99, now + 0.16);
-        
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        
-        osc.start(now);
-        osc.stop(now + 0.35);
-      } catch (e) {}
-    },
     playWrong() {
-      try {
-        this.init();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.setValueAtTime(174.61, now + 0.12);
-        
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-        
-        osc.start(now);
-        osc.stop(now + 0.3);
-      } catch (e) {}
+      if (window.trafficAudio) {
+        window.trafficAudio.playBrakeScreech();
+      }
+    },
+    playStart() {
+      if (window.trafficAudio) {
+        window.trafficAudio.playEngineStart();
+      }
     }
   };
 
-  // Persistence
   function loadPersisted() {
     try {
       const stats = localStorage.getItem(STORAGE_KEY_STATS);
@@ -129,10 +87,8 @@
     }
   }
 
-  // XP & Leveling Engine
   function addXP(amount) {
     state.userStats.xp += amount;
-    // Level formula: Level = floor(sqrt(XP / 100)) + 1
     const newLevel = Math.floor(Math.sqrt(state.userStats.xp / 100)) + 1;
     state.userStats.level = newLevel;
     savePersisted();
@@ -149,15 +105,12 @@
   }
 
   function renderStatsHeader() {
-    // XP Pill
     const xpEl = document.getElementById('stat-xp');
     if (xpEl) xpEl.textContent = `${state.userStats.xp} XP`;
 
-    // Streak
     const streakEl = document.getElementById('stat-streak');
     if (streakEl) streakEl.textContent = state.userStats.streak;
 
-    // Level Banner
     const lvlNum = document.getElementById('level-num');
     if (lvlNum) lvlNum.textContent = state.userStats.level;
 
@@ -166,7 +119,6 @@
     const titleIdx = Math.min(titles.length - 1, state.userStats.level - 1);
     if (lvlTitle) lvlTitle.textContent = titles[titleIdx];
 
-    // XP Progress inside level
     const currentLvlBaseXP = Math.pow(state.userStats.level - 1, 2) * 100;
     const nextLvlXP = Math.pow(state.userStats.level, 2) * 100;
     const xpInLevel = state.userStats.xp - currentLvlBaseXP;
@@ -180,14 +132,13 @@
     if (xpText) xpText.textContent = `${state.userStats.xp} / ${nextLvlXP} XP`;
   }
 
-  // Timer Management (Pausable when user leaves or minimizes)
+  // Timer Management
   function startTimer() {
     stopTimer();
     state.timerInterval = setInterval(() => {
       if (!state.session || state.session.completed) return;
       state.session.timerSeconds++;
       updateTimerDisplay();
-      // Periodically save elapsed time
       if (state.session.timerSeconds % 5 === 0) savePersisted();
     }, 1000);
   }
@@ -210,7 +161,6 @@
     }
   }
 
-  // Handle Page Visibility Change (Pause timer on minimize, resume on return)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopTimer();
@@ -222,7 +172,6 @@
     }
   });
 
-  // Question Queue Generator
   function generateSessionQueue(size, filterCategory = null, onlyPlates = false) {
     let pool = [...state.questions];
 
@@ -244,7 +193,6 @@
     return selected.sort(() => Math.random() - 0.5);
   }
 
-  // View Navigation
   function switchView(viewName) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -294,8 +242,8 @@
     });
   }
 
-  // Start Session
   function startSession(title, filterCategory = null, onlyPlates = false) {
+    soundfx.playStart();
     const queue = generateSessionQueue(state.selectedSize, filterCategory, onlyPlates);
 
     state.session = {
@@ -318,13 +266,13 @@
 
   function resumeSession() {
     if (state.session && !state.session.completed) {
+      soundfx.playStart();
       switchView('quiz');
       startTimer();
       renderQuestion();
     }
   }
 
-  // Render Question
   function renderQuestion() {
     const sess = state.session;
     if (!sess || sess.currentIndex >= sess.queue.length) {
@@ -336,7 +284,6 @@
     const total = sess.queue.length;
     const current = sess.currentIndex + 1;
 
-    // Progress Bar & Counter
     const pct = ((current - 1) / total) * 100;
     const bar = document.getElementById('quiz-bar-fill');
     if (bar) bar.style.width = `${pct}%`;
@@ -346,7 +293,6 @@
 
     updateTimerDisplay();
 
-    // Badges
     const badgeContainer = document.getElementById('q-badges');
     badgeContainer.innerHTML = '';
 
@@ -357,12 +303,11 @@
     }
 
     if ((state.userDifficulty[q.id] || 0) > 0) {
-      badgeContainer.innerHTML += `<span class="badge-tag" style="background: rgba(139, 92, 246, 0.2); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.4);">🔄 Revisando Erro</span>`;
+      badgeContainer.innerHTML += `<span class="badge-tag" style="background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4);">🔄 Revisando Erro</span>`;
     }
 
     badgeContainer.innerHTML += `<span class="badge-tag badge-module">${(q.module || 'Geral').split('-')[0].trim()}</span>`;
 
-    // Plate Image
     const plateWrapper = document.getElementById('q-plate-wrapper');
     const plateImg = document.getElementById('q-plate-img');
     const imgSrc = q.plate_image || (q.plate_code && state.plates[q.plate_code] ? state.plates[q.plate_code].image : null);
@@ -374,13 +319,9 @@
       plateWrapper.style.display = 'none';
     }
 
-    // Question Text
     document.getElementById('q-text').textContent = q.question;
-
-    // Hide feedback
     document.getElementById('feedback-box').style.display = 'none';
 
-    // Alternatives
     const answersContainer = document.getElementById('answers-stack');
     answersContainer.innerHTML = '';
 
@@ -405,7 +346,6 @@
     });
   }
 
-  // Answer Selection
   function selectAnswer(selectedIdx) {
     const sess = state.session;
     const q = sess.queue[sess.currentIndex];
@@ -442,7 +382,6 @@
 
       state.userDifficulty[q.id] = (state.userDifficulty[q.id] || 0) + 1;
 
-      // Smart repeat: re-insert at the end
       const cloned = { ...q, cachedOptions: null };
       sess.queue.push(cloned);
     }
@@ -458,7 +397,7 @@
     const fbRepeat = document.getElementById('feedback-repeat-notice');
 
     fbStatus.className = `feedback-status ${isCorrect ? 'correct' : 'wrong'}`;
-    fbStatus.innerHTML = isCorrect ? '✨ Resposta Correta! (+10 XP)' : '❌ Não foi dessa vez!';
+    fbStatus.innerHTML = isCorrect ? '🚗 Bi-bi! Resposta Correta! (+10 XP)' : '🛑 Frenagem! Não foi dessa vez!';
 
     fbExp.innerHTML = `<strong>Fundamentação:</strong> ${q.explanation || 'Conforme as normas do CTB e Resoluções vigentes do CONTRAN.'}`;
 
@@ -480,7 +419,6 @@
     renderQuestion();
   }
 
-  // Finish Session
   function finishSession() {
     stopTimer();
     const sess = state.session;
@@ -490,7 +428,6 @@
     checkAchievement('first_play');
     if (sess.totalInitial === 10) checkAchievement('speed_demon');
 
-    // Bonus XP for finishing
     addXP(30);
 
     const timeSpent = sess.timerSeconds;
@@ -506,7 +443,7 @@
     const pct = Math.round((correct / (correct + sess.mistakesCount)) * 100) || 0;
     const passed = pct >= 70;
 
-    document.getElementById('res-heading').textContent = passed ? 'Mandou Bem Demais! 🚀' : 'Treino Concluído! 🎯';
+    document.getElementById('res-heading').textContent = passed ? 'Gabaritou! 🚗💨' : 'Treino Concluído! 🎯';
     document.getElementById('res-subheading').textContent = passed 
       ? `Você teve ${pct}% de precisão em ${timeFormatted}. Se fizer a prova hoje, está aprovado!`
       : `Você repetiu todas as questões que errou até fixar o conteúdo. Tempo: ${timeFormatted}.`;
@@ -518,7 +455,6 @@
     switchView('result');
   }
 
-  // View: Placas Catalog
   function renderPlacasCatalog(filterCat = 'todas') {
     const grid = document.getElementById('plates-catalog-grid');
     if (!grid) return;
@@ -540,14 +476,12 @@
         <div class="plate-card-title">${p.name || ''}</div>
       `;
       card.onclick = () => {
-        // Start an instant question quiz around this plate
         startSession(`Treino da Placa ${p.code}`, null, false);
       };
       grid.appendChild(card);
     });
   }
 
-  // View: Missions & Achievements
   function renderMissionsView() {
     const container = document.getElementById('missions-list');
     if (!container) return;
@@ -569,13 +503,11 @@
     });
   }
 
-  // Init
   window.addEventListener('DOMContentLoaded', () => {
     loadPersisted();
     renderStatsHeader();
     checkResumeBanner();
 
-    // Size selectors
     document.querySelectorAll('.selector-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const size = parseInt(btn.getAttribute('data-size'), 10);
@@ -583,7 +515,6 @@
       });
     });
 
-    // Nav tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const tabName = tab.getAttribute('data-tab');
@@ -592,7 +523,6 @@
     });
   });
 
-  // Public API
   window.cnhApp = {
     switchView,
     selectSize,
