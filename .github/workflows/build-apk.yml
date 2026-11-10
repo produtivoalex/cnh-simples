@@ -12,92 +12,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
-
-      - name: Configure and Build Android APK
+      - name: Generate Android Project using Cordova
         run: |
-          # Detect actual Android SDK directory on Ubuntu runner
-          SDK_PATH="/usr/local/lib/android/sdk"
-          if [ ! -d "$SDK_PATH" ]; then
-            SDK_PATH="$ANDROID_SDK_ROOT"
-          fi
-          echo "Using Android SDK at: $SDK_PATH"
+          npm install -g cordova
+          cordova create cnh-app dev.pages.cnhsimples "CNH Simples"
+          cd cnh-app
+          cordova platform add android
+          
+          # Replace www with our PWA static files
+          rm -rf www/*
+          cp -r ../* www/ 2>/dev/null || true
+          
+          # Build APK
+          cordova build android --debug
 
-          mkdir -p ~/.bubblewrap
-          cat <<EOF > ~/.bubblewrap/config.json
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$SDK_PATH"
-          }
-          EOF
+          mkdir -p ../dist
+          find platforms/android/app/build/outputs/apk/ -name "*.apk" -exec cp {} ../dist/ \;
 
-          mkdir -p android-build
-          cd android-build
-
-          # Generate keystore
-          keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass cnhsimples123 -keypass cnhsimples123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, ST=SP, C=BR"
-
-          # Create twa-manifest.json
-          cat <<EOF > twa-manifest.json
-          {
-            "packageId": "dev.pages.cnhsimples.twa",
-            "host": "cnhsimples.pages.dev",
-            "name": "CNH Simples",
-            "launcherName": "CNH Simples",
-            "themeColor": "#070B12",
-            "navigationColor": "#070B12",
-            "backgroundColor": "#070B12",
-            "enableNotifications": false,
-            "startUrl": "/",
-            "iconUrl": "https://cnhsimples.pages.dev/assets/icons/icon-512.png",
-            "maskableIconUrl": "https://cnhsimples.pages.dev/assets/icons/icon-512.png",
-            "appVersionName": "1.0.0",
-            "appVersionCode": 1,
-            "shortcuts": [],
-            "signingKey": {
-              "path": "./android.keystore",
-              "alias": "cnhsimples"
-            },
-            "generatorApp": "bubblewrap-cli",
-            "minSdkVersion": 21,
-            "targetSdkVersion": 34,
-            "isChromeOSOnly": false,
-            "features": {
-              "locationDelegation": {
-                "enabled": false
-              },
-              "playBilling": {
-                "enabled": false
-              }
-            },
-            "alphaDependencies": {
-              "enabled": false
-            }
-          }
-          EOF
-
-          # Build project and APK
-          bubblewrap build --skipPwaValidation --keyPassword=cnhsimples123 --keyStorePassword=cnhsimples123 || true
-
-          # If unsigned APK or release APK created, copy to dist
-          mkdir -p dist
-          find . -name "*.apk" -exec cp {} dist/ \;
-
-      - name: Archive and Upload APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CNH-Simples-APK
-          path: android-build/dist/*.apk
-          if-no-files-found: warn
+          path: dist/*.apk
+          if-no-files-found: error
