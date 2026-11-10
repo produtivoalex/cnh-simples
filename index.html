@@ -3,379 +3,203 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>CNH Simples - Preparatório Oficial Detran & Senatran</title>
+  <title>CNH Simples</title>
   
-  <!-- PWA Meta tags -->
+  <!-- PWA & Mobile Optimization -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563EB">
+  <meta name="theme-color" content="#090D16">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CNH Simples">
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 
-  <!-- Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-brand">
-        <img src="assets/icons/favicon.png" alt="CNH Simples Logo" class="header-logo">
-        <span class="header-title">CNH Simples</span>
+  <div class="app-shell">
+    
+    <!-- Minimalist Top Bar -->
+    <header class="top-nav">
+      <div class="brand" onclick="window.cnhApp.switchView('home')">
+        <span class="brand-dot"></span>
+        <span>CNH Simples</span>
       </div>
-      <div class="header-actions">
-        <button class="header-btn" title="Caderno de Erros" onclick="window.cnhApp.switchView('erros')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
+      <div class="header-status">
+        <div class="streak-pill">
+          <span>🔥</span>
+          <span id="stat-streak">1</span>
+        </div>
       </div>
     </header>
 
-    <!-- Main Views Container -->
-    <main class="app-main">
+    <!-- Main Content -->
+    <main class="main-content">
       
-      <!-- PWA Install Banner -->
-      <div id="pwa-install-banner" class="install-banner" style="display: none;">
-        <div class="install-text">📱 Instale o app no seu celular para estudar até sem internet!</div>
-        <button id="btn-pwa-install" class="btn-install">Instalar</button>
-      </div>
-
-      <!-- VIEW 1: DASHBOARD / HOME -->
+      <!-- VIEW 1: HOME / DASHBOARD (SUPER LIMPO E DIRETO AO PONTO) -->
       <section id="view-home" class="view active">
-        <!-- Hero Card -->
-        <div class="welcome-card">
-          <h2 class="welcome-title">Rumo à sua CNH 🚗</h2>
-          <p class="welcome-desc">Prepare-se com 1.500 questões oficiais do Senatran com todas as justificativas e artigos salvos.</p>
-          <div class="progress-banner">
-            <div class="progress-info">
-              <span class="progress-label">Termômetro de Aprovação</span>
-              <span id="stat-termometro" class="progress-stat">0%</span>
-            </div>
-            <div class="progress-info" style="text-align: right;">
-              <span class="progress-label">Questões Feitas</span>
-              <span id="stat-total-resp" class="progress-stat">0</span>
-            </div>
+        
+        <!-- Continue Banner (se o usuário saiu antes de terminar) -->
+        <div id="resume-card" class="resume-card" style="display: none;">
+          <div class="resume-info">
+            <h4 id="resume-title">Continuar Treino</h4>
+            <p id="resume-desc">Você tem um treino em andamento</p>
           </div>
+          <button class="btn-resume" onclick="window.cnhApp.resumeSession()">Continuar ➔</button>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="section-title">
-          <span>Modos de Treino</span>
-          <span class="section-badge">Senatran 2026</span>
+        <h1 class="hero-title">Bora Gabaritar o Detran</h1>
+        <p class="hero-subtitle">Questões inteligentes que priorizam pegadinhas e repetem seus erros até você dominar o conteúdo.</p>
+
+        <!-- Seletor Rápido de Questões (10, 20, 30) -->
+        <div class="setup-box">
+          <div class="setup-label">Quantidade de questões</div>
+          <div class="selector-grid">
+            <button class="selector-btn" data-size="10">
+              10
+              <span>Rápido • 5m</span>
+            </button>
+            <button class="selector-btn active" data-size="20">
+              20
+              <span>Ideal • 12m</span>
+            </button>
+            <button class="selector-btn" data-size="30">
+              30
+              <span>Simulado • 25m</span>
+            </button>
+          </div>
+
+          <button class="btn-play-primary" onclick="window.cnhApp.startSession('Treino Inteligente')">
+            <span>Iniciar Treino</span>
+            <span>⚡</span>
+          </button>
         </div>
 
-        <div class="quick-grid">
-          <div class="action-card" onclick="window.cnhApp.startSimulado()">
-            <div class="action-icon blue">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-              <div class="action-name">Simulado Detran</div>
-              <div class="action-detail">30 questões • 50 min</div>
-            </div>
-          </div>
-
-          <div class="action-card" onclick="window.cnhApp.initTinderPlacas()">
-            <div class="action-icon amber">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            </div>
-            <div>
-              <div class="action-name">Tinder de Placas</div>
-              <div class="action-detail">146 placas oficiais</div>
-            </div>
-          </div>
-
-          <div class="action-card" onclick="window.cnhApp.switchView('erros')">
-            <div class="action-icon purple">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div>
-              <div class="action-name">Caderno de Erros</div>
-              <div class="action-detail"><span id="dash-error-count">0</span> para revisar</div>
-            </div>
-          </div>
-
-          <div class="action-card" onclick="window.cnhApp.switchView('placas')">
-            <div class="action-icon green">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            </div>
-            <div>
-              <div class="action-name">Catálogo Visual</div>
-              <div class="action-detail">Consultar placas</div>
-            </div>
-          </div>
+        <!-- Modos Específicos -->
+        <div class="modes-title">
+          <span>Treinos Focados</span>
+          <span style="color: var(--accent-light);">1.500 Questões</span>
         </div>
 
-        <!-- Trilha de Módulos Oficiais -->
-        <div class="section-title">
-          <span>Trilha por Módulos</span>
-          <span class="section-badge">4 Módulos</span>
-        </div>
-
-        <div class="module-list">
-          <!-- Mod 1 -->
-          <div class="module-card" onclick="window.cnhApp.startModuleQuiz('sinalizacao', 'Módulo 1 - Sinalização e Vias')">
-            <div class="module-badge m1">01</div>
-            <div class="module-info">
-              <div class="module-title">Sinalização de Trânsito</div>
-              <div class="module-sub">
-                <span id="txt-sinalizacao">0% acertos</span>
-              </div>
-              <div class="module-meter">
-                <div id="prog-sinalizacao" class="module-meter-fill"></div>
-              </div>
+        <div class="modes-grid">
+          <!-- Pegadinhas -->
+          <div class="mode-card" onclick="window.cnhApp.startSession('🚨 Foco em Pegadinhas')">
+            <div class="mode-card-icon">🚨</div>
+            <div>
+              <div class="mode-card-name">Pegadinhas</div>
+              <div class="mode-card-desc">As que mais reprovam</div>
             </div>
           </div>
 
-          <!-- Mod 2 -->
-          <div class="module-card" onclick="window.cnhApp.startModuleQuiz('infracoes', 'Módulo 2 - Legislação e Infrações')">
-            <div class="module-badge m2">02</div>
-            <div class="module-info">
-              <div class="module-title">Legislação e Infrações</div>
-              <div class="module-sub">
-                <span id="txt-infracoes">0% acertos</span>
-              </div>
-              <div class="module-meter">
-                <div id="prog-infracoes" class="module-meter-fill"></div>
-              </div>
+          <!-- Sinalização & Placas -->
+          <div class="mode-card" onclick="window.cnhApp.startSession('🛑 Sinalização e Placas', 'sinalizacao')">
+            <div class="mode-card-icon">🛑</div>
+            <div>
+              <div class="mode-card-name">Sinalização</div>
+              <div class="mode-card-desc">Placas e preferência</div>
             </div>
           </div>
 
-          <!-- Mod 3 -->
-          <div class="module-card" onclick="window.cnhApp.startModuleQuiz('defensiva', 'Módulo 3 - Direção Defensiva')">
-            <div class="module-badge m3">03</div>
-            <div class="module-info">
-              <div class="module-title">Direção Defensiva</div>
-              <div class="module-sub">
-                <span id="txt-defensiva">0% acertos</span>
-              </div>
-              <div class="module-meter">
-                <div id="prog-defensiva" class="module-meter-fill"></div>
-              </div>
+          <!-- Infrações -->
+          <div class="mode-card" onclick="window.cnhApp.startSession('⚖️ Infrações e Penalidades', 'infracoes')">
+            <div class="mode-card-icon">⚖️</div>
+            <div>
+              <div class="mode-card-name">Legislação</div>
+              <div class="mode-card-desc">Multas, pontos e CTB</div>
             </div>
           </div>
 
-          <!-- Mod 4 -->
-          <div class="module-card" onclick="window.cnhApp.startModuleQuiz('socorros_mecanica_meioambiente', 'Módulo 4 - Socorros, Mecânica e Cidadania')">
-            <div class="module-badge m4">04</div>
-            <div class="module-info">
-              <div class="module-title">Socorros, Mecânica & Meio Ambiente</div>
-              <div class="module-sub">
-                <span id="txt-socorros">0% acertos</span>
-              </div>
-              <div class="module-meter">
-                <div id="prog-socorros" class="module-meter-fill"></div>
-              </div>
+          <!-- Direção Defensiva -->
+          <div class="mode-card" onclick="window.cnhApp.startSession('🛡️ Direção Defensiva', 'defensiva')">
+            <div class="mode-card-icon">🛡️</div>
+            <div>
+              <div class="mode-card-name">Defensiva</div>
+              <div class="mode-card-desc">Segurança e prevenção</div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 2: QUIZ / SIMULADO -->
+      <!-- VIEW 2: GAME / QUIZ INTERATIVO COM FEEDBACK IMEDIATO -->
       <section id="view-quiz" class="view">
-        <div class="quiz-header">
-          <div class="quiz-badge" id="quiz-title">Simulado Oficial</div>
-          <div class="quiz-timer" id="quiz-timer" style="display: none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span id="timer-text">50:00</span>
+        <div class="quiz-top">
+          <button class="btn-close-quiz" onclick="window.cnhApp.switchView('home')">✕</button>
+          <div class="bar-container">
+            <div id="quiz-bar-fill" class="bar-fill"></div>
+          </div>
+          <span id="quiz-counter" class="quiz-counter">1/20</span>
+        </div>
+
+        <!-- Question Box -->
+        <div class="q-box">
+          <div id="q-badges" class="q-badges">
+            <!-- Badges injetadas dinamicamente (Pegadinha, Cai Muito, etc) -->
+          </div>
+
+          <div id="q-plate-wrapper" class="q-plate-wrapper" style="display: none;">
+            <img id="q-plate-img" class="q-plate-img" src="" alt="Placa">
+          </div>
+
+          <div id="q-text" class="q-text">
+            Carregando questão...
           </div>
         </div>
 
-        <div class="quiz-progress-bar">
-          <div id="quiz-progress-bar" class="quiz-progress-fill"></div>
+        <!-- Options Stack -->
+        <div id="answers-stack" class="answers-stack">
+          <!-- Alternativas injetadas dinamicamente -->
         </div>
 
-        <div class="question-box">
-          <div class="question-meta">
-            <span id="quiz-diff-badge" class="tag-difficulty diff-inter">Médio</span>
-            <span id="quiz-q-num" class="question-num">Questão 1 de 30</span>
+        <!-- Drawer de Feedback e Justificativa -->
+        <div id="feedback-box" class="feedback-box" style="display: none;">
+          <div id="feedback-status" class="feedback-status correct">
+            ✨ Resposta Correta!
           </div>
-
-          <div id="quiz-plate-box" class="plate-preview-box" style="display: none;">
-            <img id="quiz-plate-img" class="plate-preview-img" src="" alt="Placa de Trânsito">
-          </div>
-
-          <div id="quiz-question-text" class="question-text">
-            Texto da questão carregando...
-          </div>
-        </div>
-
-        <!-- Options Container -->
-        <div id="quiz-options-list" class="options-list">
-          <!-- Rendered dynamically -->
-        </div>
-
-        <!-- Explanation Container (Static DB comment & legal article) -->
-        <div id="quiz-explanation-card" class="explanation-card" style="display: none;">
-          <div class="exp-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Fundamentação Legal (CTB / CONTRAN):</span>
-          </div>
-          <div id="quiz-exp-text" class="exp-text"></div>
-        </div>
-
-        <!-- Quiz Footer Controls -->
-        <div class="quiz-footer">
-          <button class="btn btn-secondary" onclick="window.cnhApp.switchView('home')">Sair</button>
-          <button id="btn-quiz-next" class="btn btn-primary" onclick="window.cnhApp.handleQuizNext()">Próxima ➔</button>
+          <div id="feedback-explanation" class="feedback-explanation"></div>
+          <div id="feedback-repeat-notice" class="feedback-repeat-notice" style="display: none;"></div>
+          <button class="btn-continue" onclick="window.cnhApp.nextQuestion()">Continuar ➔</button>
         </div>
       </section>
 
-      <!-- VIEW 3: RESULTADOS DO SIMULADO -->
+      <!-- VIEW 3: RESULTADOS / FINAL DE TREINO -->
       <section id="view-result" class="view">
-        <div class="result-card">
-          <div id="res-badge" class="result-badge passed">🎉</div>
-          <h2 id="res-title" class="result-title">PARABÉNS! VOCÊ FOI APROVADO!</h2>
-          <div id="res-score" class="result-score">85%</div>
-          <p id="res-feedback" class="result-feedback">Você atingiu a pontuação mínima de 70% exigida pelo Detran.</p>
+        <div class="result-container">
+          <div class="result-trophy">🏆</div>
+          <h2 id="res-heading" class="result-heading">Mandou Bem Demais!</h2>
+          <p id="res-subheading" class="result-subheading">Você concluiu a rodada de questões e reforçou os conceitos chave para a prova.</p>
 
-          <div class="result-stats-grid">
-            <div class="stat-box">
-              <div id="res-acertos" class="stat-val" style="color: #10B981;">25/30</div>
-              <div class="stat-desc">Acertos</div>
+          <div class="result-kpi-row">
+            <div class="kpi-card">
+              <div id="kpi-acertos" class="kpi-num" style="color: var(--success);">18</div>
+              <div class="kpi-lbl">Acertos</div>
             </div>
-            <div class="stat-box">
-              <div id="res-erros" class="stat-val" style="color: #EF4444;">5</div>
-              <div class="stat-desc">Erros (salvos no Caderno)</div>
+            <div class="kpi-card">
+              <div id="kpi-erros" class="kpi-num" style="color: var(--danger);">2</div>
+              <div class="kpi-lbl">Erros repetidos</div>
+            </div>
+            <div class="kpi-card">
+              <div id="kpi-pct" class="kpi-num" style="color: var(--accent-light);">90%</div>
+              <div class="kpi-lbl">Precisão</div>
             </div>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="btn btn-primary" onclick="window.cnhApp.startSimulado()">Fazer Outro Simulado</button>
-            <button class="btn btn-secondary" onclick="window.cnhApp.switchView('erros')">Revisar Erros no Caderno</button>
-            <button class="btn btn-secondary" onclick="window.cnhApp.switchView('home')">Voltar ao Início</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW 4: TINDER DE PLACAS -->
-      <section id="view-tinder" class="view">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="font-size: 1.1rem; font-weight: 700;">Memorização de Placas</h2>
-          <span id="tinder-counter" class="section-badge">1 / 146</span>
-        </div>
-
-        <div class="tinder-container">
-          <div id="tinder-card-body" class="tinder-card">
-            <!-- Dynamically populated -->
-          </div>
-
-          <div class="tinder-actions">
-            <button class="tinder-btn btn-pass" title="Não decorei ainda" onclick="window.cnhApp.handleTinderVote(false)">
-              ✕
-            </button>
-            <button class="tinder-btn btn-know" title="Já sei de cor" onclick="window.cnhApp.handleTinderVote(true)">
-              ✓
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW 5: CATÁLOGO DE PLACAS -->
-      <section id="view-placas" class="view">
-        <div class="section-title">
-          <span>Catálogo Visual de Placas</span>
-          <span class="section-badge">146 Oficiais</span>
-        </div>
-
-        <div class="pill-filter">
-          <button class="pill-btn active" onclick="this.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); window.cnhApp.renderPlacasView('todas')">Todas</button>
-          <button class="pill-btn" onclick="this.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); window.cnhApp.renderPlacasView('regulamentacao')">Regulamentação (R)</button>
-          <button class="pill-btn" onclick="this.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); window.cnhApp.renderPlacasView('advertencia')">Advertência (A)</button>
-          <button class="pill-btn" onclick="this.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); window.cnhApp.renderPlacasView('indicacao')">Indicação & Serviços</button>
-        </div>
-
-        <div id="plates-catalog-grid" class="plates-grid">
-          <!-- Dynamically populated -->
-        </div>
-      </section>
-
-      <!-- VIEW 6: CADERNO DE ERROS -->
-      <section id="view-erros" class="view">
-        <div class="section-title">
-          <span>Caderno de Erros Inteligente</span>
-          <span id="erros-badge-count" class="section-badge">0 questões</span>
-        </div>
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">
-          Toda questão que você errar no simulado vem para cá automaticamente. Quando você acertar na revisão, ela sai da lista!
-        </p>
-
-        <button class="btn btn-primary" style="margin-bottom: 20px; width: 100%;" onclick="window.cnhApp.startErrorNotebookQuiz()">
-          Treinar Somente as Questões Erradas
-        </button>
-
-        <div id="erros-list-container">
-          <!-- Dynamically populated -->
-        </div>
-      </section>
-
-      <!-- VIEW 7: ESTATÍSTICAS -->
-      <section id="view-stats" class="view">
-        <div class="section-title">
-          <span>Seu Desempenho Global</span>
-        </div>
-
-        <div class="result-card" style="margin-bottom: 20px;">
-          <div class="stat-desc">Taxa de Acerto Geral</div>
-          <div id="stat-big-acc" class="result-score" style="color: #3B82F6;">0%</div>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Para aprovação no Detran, mantenha sua taxa acima de 70%.
-          </p>
-        </div>
-
-        <div class="result-stats-grid">
-          <div class="stat-box">
-            <div id="stat-total-answered" class="stat-val">0</div>
-            <div class="stat-desc">Total Respondidas</div>
-          </div>
-          <div class="stat-box">
-            <div id="stat-sim-completed" class="stat-val">0</div>
-            <div class="stat-desc">Simulados Feitos</div>
-          </div>
-          <div class="stat-box">
-            <div id="stat-sim-passed" class="stat-val" style="color: #10B981;">0</div>
-            <div class="stat-desc">Aprovações</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-val" style="color: #8B5CF6;">1.500</div>
-            <div class="stat-desc">Banco Senatran</div>
-          </div>
+          <button class="btn-play-primary" onclick="window.cnhApp.startSession('Treino Inteligente')">
+            Jogar Novamente ⚡
+          </button>
+          <button class="btn-close-quiz" style="width: 100%; border-radius: var(--radius-lg); margin-top: 12px; height: 50px;" onclick="window.cnhApp.switchView('home')">
+            Voltar ao Início
+          </button>
         </div>
       </section>
 
     </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-view="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Início</span>
-      </button>
-
-      <button class="nav-item" data-view="placas">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>Placas</span>
-      </button>
-
-      <button class="nav-item" data-view="erros">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        <span>Erros</span>
-      </button>
-
-      <button class="nav-item" data-view="stats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span>Desempenho</span>
-      </button>
-    </nav>
   </div>
 
-  <!-- Databases Scripts (Local static JSON / JS - Zero AI dependency) -->
+  <!-- Databases -->
   <script src="data/plates.js"></script>
   <script src="data/questions.js"></script>
   
-  <!-- App Engine -->
+  <!-- App Engine v2 -->
   <script src="js/app.js"></script>
 </body>
 </html>
-
