@@ -26,26 +26,72 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Initialize and Build TWA Android Project
+      - name: Preconfigure Bubblewrap and Build APK
         run: |
+          mkdir -p ~/.bubblewrap
+          # Configure bubblewrap paths to avoid interactive prompts
+          cat <<EOF > ~/.bubblewrap/config.json
+          {
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_SDK_ROOT"
+          }
+          EOF
+
           mkdir -p android-build
           cd android-build
-          
-          # Use preinstalled Android SDK from runner
-          export ANDROID_HOME=$ANDROID_SDK_ROOT
-          
-          # Initialize TWA via Bubblewrap without interactive prompt
-          bubblewrap init --manifest="https://cnhsimples.pages.dev/manifest.json" --directory="." --chromeOSOnly=false || true
-          
-          # Create a custom keystore for signing the APK
-          keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass cnhsimples123 -keypass cnhsimples123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, S=SP, C=BR"
-          
-          # Build signed APK and bundle
-          bubblewrap build --skipPwaValidation || true
+
+          # Generate keystore
+          keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass cnhsimples123 -keypass cnhsimples123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, ST=SP, C=BR"
+
+          # Create twa-manifest.json non-interactively
+          cat <<EOF > twa-manifest.json
+          {
+            "packageId": "dev.pages.cnhsimples.twa",
+            "host": "cnhsimples.pages.dev",
+            "name": "CNH Simples",
+            "launcherName": "CNH Simples",
+            "themeColor": "#070B12",
+            "navigationColor": "#070B12",
+            "backgroundColor": "#070B12",
+            "enableNotifications": false,
+            "startUrl": "/",
+            "iconUrl": "https://cnhsimples.pages.dev/assets/icons/icon-512.png",
+            "maskableIconUrl": "https://cnhsimples.pages.dev/assets/icons/icon-512.png",
+            "appVersionName": "1.0.0",
+            "appVersionCode": 1,
+            "shortcuts": [],
+            "signingKey": {
+              "path": "./android.keystore",
+              "alias": "cnhsimples"
+            },
+            "generatorApp": "bubblewrap-cli",
+            "minSdkVersion": 21,
+            "targetSdkVersion": 34,
+            "isChromeOSOnly": false,
+            "features": {
+              "locationDelegation": {
+                "enabled": false
+              },
+              "playBilling": {
+                "enabled": false
+              }
+            },
+            "alphaDependencies": {
+              "enabled": false
+            }
+          }
+          EOF
+
+          # Build APK with passwords supplied
+          bubblewrap build --skipPwaValidation --keyPassword=cnhsimples123 --keyStorePassword=cnhsimples123
+
+          # List generated files to verify
+          ls -la
+          find . -name "*.apk"
 
       - name: Archive and Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CNH-Simples-Release-APK
           path: android-build/**/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
