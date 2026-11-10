@@ -1,10 +1,11 @@
-const CACHE_NAME = 'cnh-simples-v5';
+const CACHE_NAME = 'cnh-simples-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
   './js/audio.js',
+  './js/sync.js',
   './data/questions.js',
   './data/plates.js',
   './manifest.json',

@@ -1,4 +1,4 @@
-// CNH Simples - Engine v4 (Brazilian Traffic Palette, Traffic Audio SFX, Achievements, Pausable Timer)
+// CNH Simples - Engine v5 (Dual Timers: Progressive + Regressive, Cross-Device Sync, Brazilian Traffic Palette & SFX)
 
 (function () {
   'use strict';
@@ -35,22 +35,16 @@
     { id: 'speed_demon', title: 'Rápido no Gatilho', desc: 'Completou um treino de 10 questões', icon: '⏱️', xp: 80 }
   ];
 
-  // Sounds (Uses trafficAudio if available, fallback to WebAudio)
+  // Sounds
   const soundfx = {
     playCorrect() {
-      if (window.trafficAudio) {
-        window.trafficAudio.playCarHorn();
-      }
+      if (window.trafficAudio) window.trafficAudio.playCarHorn();
     },
     playWrong() {
-      if (window.trafficAudio) {
-        window.trafficAudio.playBrakeScreech();
-      }
+      if (window.trafficAudio) window.trafficAudio.playBrakeScreech();
     },
     playStart() {
-      if (window.trafficAudio) {
-        window.trafficAudio.playEngineStart();
-      }
+      if (window.trafficAudio) window.trafficAudio.playEngineStart();
     }
   };
 
@@ -132,12 +126,15 @@
     if (xpText) xpText.textContent = `${state.userStats.xp} / ${nextLvlXP} XP`;
   }
 
-  // Timer Management
+  // DUAL TIMERS: Progressive (tempo decorrido) + Regressive (tempo restante oficial)
   function startTimer() {
     stopTimer();
     state.timerInterval = setInterval(() => {
       if (!state.session || state.session.completed) return;
       state.session.timerSeconds++;
+      if (state.session.remainingSeconds > 0) {
+        state.session.remainingSeconds--;
+      }
       updateTimerDisplay();
       if (state.session.timerSeconds % 5 === 0) savePersisted();
     }, 1000);
@@ -152,13 +149,24 @@
 
   function updateTimerDisplay() {
     if (!state.session) return;
+    
+    // 1. Progressive Timer (Elapsed)
     const s = state.session.timerSeconds || 0;
     const m = Math.floor(s / 60);
     const sec = s % 60;
-    const timerEl = document.getElementById('quiz-timer');
-    if (timerEl) {
-      timerEl.textContent = `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-    }
+    const elapsedTxt = `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+
+    // 2. Regressive Timer (Countdown)
+    const rem = Math.max(0, state.session.remainingSeconds || 0);
+    const remM = Math.floor(rem / 60);
+    const remSec = rem % 60;
+    const remTxt = `${remM.toString().padStart(2, '0')}:${remSec.toString().padStart(2, '0')}`;
+
+    const timerProgEl = document.getElementById('timer-prog');
+    if (timerProgEl) timerProgEl.textContent = elapsedTxt;
+
+    const timerRegrEl = document.getElementById('timer-regr');
+    if (timerRegrEl) timerRegrEl.textContent = remTxt;
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -246,6 +254,9 @@
     soundfx.playStart();
     const queue = generateSessionQueue(state.selectedSize, filterCategory, onlyPlates);
 
+    // Initial countdown based on question count (10 qs = 15m, 20 qs = 30m, 30 qs = 50m oficial Detran)
+    const defaultCountdown = state.selectedSize === 10 ? 15 * 60 : (state.selectedSize === 20 ? 30 * 60 : 50 * 60);
+
     state.session = {
       title: title || `Treino (${state.selectedSize} questões)`,
       queue: queue,
@@ -254,6 +265,7 @@
       correctCount: 0,
       mistakesCount: 0,
       timerSeconds: 0,
+      remainingSeconds: defaultCountdown,
       completed: false,
       consecutiveCorrect: 0
     };
@@ -501,6 +513,36 @@
       `;
       container.appendChild(card);
     });
+
+    // Sync Section
+    const syncCodeEl = document.getElementById('user-sync-code');
+    if (syncCodeEl && window.cnhSync) {
+      syncCodeEl.textContent = window.cnhSync.getUserCode();
+    }
+  }
+
+  // Cross-device sync actions
+  function copySyncPayload() {
+    if (!window.cnhSync) return;
+    const str = window.cnhSync.exportProgressPayload();
+    navigator.clipboard.writeText(str).then(() => {
+      alert('Código de progresso copiado! Cole no seu outro aparelho para sincronizar.');
+    }).catch(() => {
+      prompt('Copie o código abaixo:', str);
+    });
+  }
+
+  function applySyncPayload() {
+    const code = prompt('Cole aqui o código de progresso copiado do seu outro aparelho:');
+    if (code && window.cnhSync) {
+      const ok = window.cnhSync.importProgressPayload(code);
+      if (ok) {
+        alert('Progresso sincronizado com sucesso! Recarregando...');
+        window.location.reload();
+      } else {
+        alert('Código inválido ou corrompido.');
+      }
+    }
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -529,6 +571,8 @@
     startSession,
     resumeSession,
     nextQuestion,
-    renderPlacasCatalog
+    renderPlacasCatalog,
+    copySyncPayload,
+    applySyncPayload
   };
 })();

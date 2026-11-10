@@ -135,7 +135,7 @@
         </div>
       </section>
 
-      <!-- VIEW 2: QUIZ COM TIMER PAUSÁVEL & REPETIÇÃO INTELIGENTE -->
+      <!-- VIEW 2: QUIZ COM TIMERS DUPLOS SIMULTÂNEOS (PROGRESSIVO + REGRESSIVO) -->
       <section id="view-quiz" class="view">
         <div class="quiz-top">
           <button class="btn-close-quiz" onclick="window.cnhApp.switchView('home')" title="Pausar e Sair">✕</button>
@@ -144,9 +144,18 @@
             <div id="quiz-bar-fill" class="bar-fill"></div>
           </div>
 
-          <div class="timer-pill">
-            <span>⏱️</span>
-            <span id="quiz-timer">00:00</span>
+          <!-- Timers Duplos Simultâneos -->
+          <div style="display: flex; gap: 6px;">
+            <!-- Timer Progressivo (Decorrido) -->
+            <div class="timer-pill" title="Tempo decorrido">
+              <span>⏱️</span>
+              <span id="timer-prog">00:00</span>
+            </div>
+            <!-- Timer Regressivo (Oficial Restante) -->
+            <div class="timer-pill" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171;" title="Tempo restante da prova">
+              <span>⏳</span>
+              <span id="timer-regr">50:00</span>
+            </div>
           </div>
 
           <span id="quiz-counter" class="quiz-counter" style="margin-left: 8px;">1/20</span>
@@ -196,13 +205,29 @@
         <div id="plates-catalog-grid" class="plates-grid"></div>
       </section>
 
-      <!-- VIEW 4: MISSÕES E CONQUISTAS -->
+      <!-- VIEW 4: MISSÕES, CONQUISTAS E SINCRONIZAÇÃO ENTRE APARELHOS -->
       <section id="view-conquistas" class="view">
         <div class="modes-title">
           <span>Missões & Conquistas</span>
           <span style="color: #34D399;">Recompensas em XP</span>
         </div>
         <div id="missions-list"></div>
+
+        <!-- Seção de Sincronização entre Aparelhos (Celular & PC) -->
+        <div class="setup-box" style="margin-top: 15px;">
+          <div class="setup-label">📲 Sincronizar Celular & Computador</div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+            Seu ID de Condutor: <strong id="user-sync-code" style="color: #FBBF24;">CNH-7492</strong>
+          </p>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-play-primary" style="padding: 10px; font-size: 0.85rem;" onclick="window.cnhApp.copySyncPayload()">
+              Copiar Progresso 📋
+            </button>
+            <button class="selector-btn" style="padding: 10px; font-size: 0.85rem; border: 1px solid var(--surface-border);" onclick="window.cnhApp.applySyncPayload()">
+              Importar no outro aparelho 📥
+            </button>
+          </div>
+        </div>
       </section>
 
       <!-- VIEW 5: RESULTADO DO TREINO -->
@@ -257,12 +282,13 @@
     </nav>
   </div>
 
-  <!-- Databases & Traffic Audio Synthesis -->
+  <!-- Databases, Audio Synthesis & Cross-Device Sync -->
   <script src="data/plates.js"></script>
   <script src="data/questions.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/sync.js"></script>
   
-  <!-- App Engine v4 -->
+  <!-- App Engine v5 -->
   <script src="js/app.js"></script>
 </body>
 </html>
