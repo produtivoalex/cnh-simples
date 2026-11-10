@@ -705,7 +705,7 @@
       "Que pedestres devem usar bicicletas para passar."
     ],
     "explanation": "Essa placa indica convivência entre pedestres e ciclistas.",
-    "plate_image": "assets/plates/R-44.jpg"
+    "plate_image": "assets/plates/R-44.png"
   },
   {
     "id": 42,
@@ -1352,7 +1352,7 @@
       "Estacionamentos subterrâneos."
     ],
     "explanation": "É usada em locais urbanos voltados à mobilidade ativa.",
-    "plate_image": "assets/plates/R-44.jpg"
+    "plate_image": "assets/plates/R-44.png"
   },
   {
     "id": 78,
@@ -3670,7 +3670,7 @@
       "Para aumentar a velocidade dos ciclistas."
     ],
     "explanation": "Ela visa reduzir conflitos e promover segurança no trânsito não motorizado.",
-    "plate_image": "assets/plates/R-44.jpg"
+    "plate_image": "assets/plates/R-44.png"
   },
   {
     "id": 207,

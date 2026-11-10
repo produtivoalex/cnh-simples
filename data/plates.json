@@ -307,37 +307,37 @@
   },
   "R-41": {
     "code": "R-41",
-    "image": "assets/plates/R-41.jpg",
+    "image": "assets/plates/R-41.png",
     "category": "Regulamentação",
     "name": "Circulação exclusiva de VLT / bonde"
   },
   "R-42a": {
     "code": "R-42a",
-    "image": "assets/plates/R-42a.jpg",
+    "image": "assets/plates/R-42a.png",
     "category": "Regulamentação",
     "name": "Ciclistas à esquerda, VLT à direita"
   },
   "R-42b": {
     "code": "R-42b",
-    "image": "assets/plates/R-42b.jpg",
+    "image": "assets/plates/R-42b.png",
     "category": "Regulamentação",
     "name": "Ciclistas à direita, VLT à esquerda"
   },
   "R-43a": {
     "code": "R-43a",
-    "image": "assets/plates/R-43a.jpg",
+    "image": "assets/plates/R-43a.png",
     "category": "Regulamentação",
     "name": "Veículos à esquerda, VLT à direita"
   },
   "R-43b": {
     "code": "R-43b",
-    "image": "assets/plates/R-43b.jpg",
+    "image": "assets/plates/R-43b.png",
     "category": "Regulamentação",
     "name": "Veículos à direita, VLT à esquerda"
   },
   "R-44": {
     "code": "R-44",
-    "image": "assets/plates/R-44.jpg",
+    "image": "assets/plates/R-44.png",
     "category": "Regulamentação",
     "name": "Circulação compartilhada de ciclistas e pedestres"
   },
@@ -756,25 +756,25 @@
   },
   "A-49a": {
     "code": "A-49a",
-    "image": "assets/plates/A-49a.jpg",
+    "image": "assets/plates/A-49a.png",
     "category": "Advertência",
     "name": "Pedestres à esquerda, VLT à direita"
   },
   "A-49b": {
     "code": "A-49b",
-    "image": "assets/plates/A-49b.jpg",
+    "image": "assets/plates/A-49b.png",
     "category": "Advertência",
     "name": "Pedestres à direita, VLT à esquerda"
   },
   "A-50a": {
     "code": "A-50a",
-    "image": "assets/plates/A-50a.jpg",
+    "image": "assets/plates/A-50a.png",
     "category": "Advertência",
     "name": "Veículos à esquerda, VLT à direita"
   },
   "A-50b": {
     "code": "A-50b",
-    "image": "assets/plates/A-50b.jpg",
+    "image": "assets/plates/A-50b.png",
     "category": "Advertência",
     "name": "Veículos à direita, VLT à esquerda"
   },
