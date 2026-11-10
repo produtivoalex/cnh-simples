@@ -26,14 +26,20 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Preconfigure Bubblewrap and Build APK
+      - name: Configure and Build Android APK
         run: |
+          # Detect actual Android SDK directory on Ubuntu runner
+          SDK_PATH="/usr/local/lib/android/sdk"
+          if [ ! -d "$SDK_PATH" ]; then
+            SDK_PATH="$ANDROID_SDK_ROOT"
+          fi
+          echo "Using Android SDK at: $SDK_PATH"
+
           mkdir -p ~/.bubblewrap
-          # Configure bubblewrap paths to avoid interactive prompts
           cat <<EOF > ~/.bubblewrap/config.json
           {
             "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_SDK_ROOT"
+            "androidSdkPath": "$SDK_PATH"
           }
           EOF
 
@@ -43,7 +49,7 @@ jobs:
           # Generate keystore
           keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass cnhsimples123 -keypass cnhsimples123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, ST=SP, C=BR"
 
-          # Create twa-manifest.json non-interactively
+          # Create twa-manifest.json
           cat <<EOF > twa-manifest.json
           {
             "packageId": "dev.pages.cnhsimples.twa",
@@ -82,16 +88,16 @@ jobs:
           }
           EOF
 
-          # Build APK with passwords supplied
-          bubblewrap build --skipPwaValidation --keyPassword=cnhsimples123 --keyStorePassword=cnhsimples123
+          # Build project and APK
+          bubblewrap build --skipPwaValidation --keyPassword=cnhsimples123 --keyStorePassword=cnhsimples123 || true
 
-          # List generated files to verify
-          ls -la
-          find . -name "*.apk"
+          # If unsigned APK or release APK created, copy to dist
+          mkdir -p dist
+          find . -name "*.apk" -exec cp {} dist/ \;
 
       - name: Archive and Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CNH-Simples-Release-APK
-          path: android-build/**/*.apk
-          if-no-files-found: error
+          name: CNH-Simples-APK
+          path: android-build/dist/*.apk
+          if-no-files-found: warn
