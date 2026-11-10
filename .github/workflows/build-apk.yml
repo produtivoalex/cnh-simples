@@ -9,7 +9,7 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -23,29 +23,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Generate and Build Android APK via Bubblewrap
+      - name: Initialize and Build TWA Android Project
         run: |
-          mkdir twa-build
-          cd twa-build
+          mkdir -p android-build
+          cd android-build
           
-          # Initialize manifest
+          # Use preinstalled Android SDK from runner
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          
+          # Initialize TWA via Bubblewrap without interactive prompt
           bubblewrap init --manifest="https://cnhsimples.pages.dev/manifest.json" --directory="." --chromeOSOnly=false || true
           
-          # Generate signing key if needed
-          keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, S=SP, C=BR"
+          # Create a custom keystore for signing the APK
+          keytool -genkey -v -keystore android.keystore -alias cnhsimples -keyalg RSA -keysize 2048 -validity 10000 -storepass cnhsimples123 -keypass cnhsimples123 -dname "CN=Alex, OU=CNH Simples, O=App, L=SP, S=SP, C=BR"
           
-          # Build APK
+          # Build signed APK and bundle
           bubblewrap build --skipPwaValidation || true
 
-      - name: Upload APK Artifact
+      - name: Archive and Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CNH-Simples-APK
-          path: twa-build/**/*.apk
+          name: CNH-Simples-Release-APK
+          path: android-build/**/*.apk
           if-no-files-found: warn
