@@ -1,11 +1,12 @@
-// CNH Simples - Engine v2 (Duolingo-inspired, Smart Retry on Errors, Auto-save & Resume)
+// CNH Simples - Engine v3 (Achievements, Missions, XP & Levels, Pausable Timer, Pure Placas Study)
 
 (function () {
   'use strict';
 
-  const STORAGE_KEY_STATS = 'cnh_stats_v2';
-  const STORAGE_KEY_SESSION = 'cnh_active_session_v2';
-  const STORAGE_KEY_DIFFICULTY = 'cnh_user_difficulty_v2';
+  const STORAGE_KEY_STATS = 'cnh_stats_v3';
+  const STORAGE_KEY_SESSION = 'cnh_active_session_v3';
+  const STORAGE_KEY_DIFFICULTY = 'cnh_user_difficulty_v3';
+  const STORAGE_KEY_ACHIEVEMENTS = 'cnh_achievements_v3';
 
   // State
   const state = {
@@ -14,18 +15,33 @@
     selectedSize: 20, // default 10, 20 or 30
     userStats: {
       streak: 1,
+      xp: 0,
+      level: 1,
       totalAnswered: 0,
       totalCorrect: 0,
-      sessionsCompleted: 0,
-      hearts: 5
+      sessionsCompleted: 0
     },
     // Map of questionId -> failCount
     userDifficulty: {},
+    // Completed achievements list
+    achievements: [],
     // Current active session
-    session: null
+    session: null,
+    // Timer interval ID
+    timerInterval: null
   };
 
-  // Sound effects via Web Audio API (Zero external assets needed)
+  // Missions & Achievements Definitions
+  const ACHIEVEMENTS_DEF = [
+    { id: 'first_play', title: 'Primeira Partida', desc: 'Completou seu primeiro treino', icon: '🎯', xp: 50 },
+    { id: 'streak_3', title: 'Foco Total', desc: 'Manteve 3 dias seguidos de estudo', icon: '🔥', xp: 100 },
+    { id: 'master_10', title: 'Gabaritando', desc: 'Acertou 10 questões seguidas', icon: '⚡', xp: 150 },
+    { id: 'plates_explorer', title: 'Mestre das Placas', desc: 'Estudou 30 placas no modo específico', icon: '🛑', xp: 100 },
+    { id: 'trap_slayer', title: 'Caçador de Pegadinhas', desc: 'Acertou 15 pegadinhas do Detran', icon: '🛡️', xp: 200 },
+    { id: 'speed_demon', title: 'Rápido no Gatilho', desc: 'Completou um treino de 10 questões', icon: '⏱️', xp: 80 }
+  ];
+
+  // Sound effects via Web Audio API
   const soundfx = {
     ctx: null,
     init() {
@@ -45,15 +61,15 @@
         gain.connect(this.ctx.destination);
         
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, now); // C5
-        osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-        osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
         
         gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         
         osc.start(now);
-        osc.stop(now + 0.4);
+        osc.stop(now + 0.35);
       } catch (e) {}
     },
     playWrong() {
@@ -67,14 +83,14 @@
         gain.connect(this.ctx.destination);
         
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(220, now); // A3
-        osc.frequency.setValueAtTime(174.61, now + 0.15); // F3
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.setValueAtTime(174.61, now + 0.12);
         
         gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         
         osc.start(now);
-        osc.stop(now + 0.35);
+        osc.stop(now + 0.3);
       } catch (e) {}
     }
   };
@@ -88,6 +104,9 @@
       const diff = localStorage.getItem(STORAGE_KEY_DIFFICULTY);
       if (diff) state.userDifficulty = JSON.parse(diff);
 
+      const ach = localStorage.getItem(STORAGE_KEY_ACHIEVEMENTS);
+      if (ach) state.achievements = JSON.parse(ach);
+
       const sess = localStorage.getItem(STORAGE_KEY_SESSION);
       if (sess) state.session = JSON.parse(sess);
     } catch (e) {
@@ -99,6 +118,7 @@
     try {
       localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(state.userStats));
       localStorage.setItem(STORAGE_KEY_DIFFICULTY, JSON.stringify(state.userDifficulty));
+      localStorage.setItem(STORAGE_KEY_ACHIEVEMENTS, JSON.stringify(state.achievements));
       if (state.session) {
         localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(state.session));
       } else {
@@ -109,51 +129,145 @@
     }
   }
 
-  // Smart Question Selector
-  // Prioritizes: 1. Previous User Failures, 2. Pegadinhas / Traps, 3. High Frequency Exam questions
-  function generateSessionQueue(size, filterCategory = null) {
+  // XP & Leveling Engine
+  function addXP(amount) {
+    state.userStats.xp += amount;
+    // Level formula: Level = floor(sqrt(XP / 100)) + 1
+    const newLevel = Math.floor(Math.sqrt(state.userStats.xp / 100)) + 1;
+    state.userStats.level = newLevel;
+    savePersisted();
+    renderStatsHeader();
+  }
+
+  function checkAchievement(id) {
+    if (!state.achievements.includes(id)) {
+      state.achievements.push(id);
+      const def = ACHIEVEMENTS_DEF.find(a => a.id === id);
+      if (def) addXP(def.xp);
+      savePersisted();
+    }
+  }
+
+  function renderStatsHeader() {
+    // XP Pill
+    const xpEl = document.getElementById('stat-xp');
+    if (xpEl) xpEl.textContent = `${state.userStats.xp} XP`;
+
+    // Streak
+    const streakEl = document.getElementById('stat-streak');
+    if (streakEl) streakEl.textContent = state.userStats.streak;
+
+    // Level Banner
+    const lvlNum = document.getElementById('level-num');
+    if (lvlNum) lvlNum.textContent = state.userStats.level;
+
+    const lvlTitle = document.getElementById('level-title');
+    const titles = ['Novato do Asfalto', 'Condutor Consciente', 'Piloto Defensivo', 'Mestre do CTB', 'Gabaritador Detran'];
+    const titleIdx = Math.min(titles.length - 1, state.userStats.level - 1);
+    if (lvlTitle) lvlTitle.textContent = titles[titleIdx];
+
+    // XP Progress inside level
+    const currentLvlBaseXP = Math.pow(state.userStats.level - 1, 2) * 100;
+    const nextLvlXP = Math.pow(state.userStats.level, 2) * 100;
+    const xpInLevel = state.userStats.xp - currentLvlBaseXP;
+    const needed = nextLvlXP - currentLvlBaseXP;
+    const pct = Math.min(100, Math.round((xpInLevel / (needed || 100)) * 100));
+
+    const xpFill = document.getElementById('xp-fill');
+    if (xpFill) xpFill.style.width = `${pct}%`;
+
+    const xpText = document.getElementById('xp-text');
+    if (xpText) xpText.textContent = `${state.userStats.xp} / ${nextLvlXP} XP`;
+  }
+
+  // Timer Management (Pausable when user leaves or minimizes)
+  function startTimer() {
+    stopTimer();
+    state.timerInterval = setInterval(() => {
+      if (!state.session || state.session.completed) return;
+      state.session.timerSeconds++;
+      updateTimerDisplay();
+      // Periodically save elapsed time
+      if (state.session.timerSeconds % 5 === 0) savePersisted();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+  }
+
+  function updateTimerDisplay() {
+    if (!state.session) return;
+    const s = state.session.timerSeconds || 0;
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    const timerEl = document.getElementById('quiz-timer');
+    if (timerEl) {
+      timerEl.textContent = `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
+  }
+
+  // Handle Page Visibility Change (Pause timer on minimize, resume on return)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopTimer();
+      savePersisted();
+    } else {
+      if (state.session && !state.session.completed && document.getElementById('view-quiz').classList.contains('active')) {
+        startTimer();
+      }
+    }
+  });
+
+  // Question Queue Generator
+  function generateSessionQueue(size, filterCategory = null, onlyPlates = false) {
     let pool = [...state.questions];
-    if (filterCategory) {
+
+    if (onlyPlates) {
+      pool = pool.filter(q => q.plate_code || q.plate_image || (q.category === 'sinalizacao' && q.question.toLowerCase().includes('placa')));
+    } else if (filterCategory) {
       pool = pool.filter(q => q.category === filterCategory);
     }
 
-    // Calculate score for each question
     const scoredPool = pool.map(q => {
       let priorityScore = q.weight || 1;
-      
-      // If user failed this question previously, heavily boost priority so it repeats!
       const userFails = state.userDifficulty[q.id] || 0;
-      if (userFails > 0) {
-        priorityScore += userFails * 10;
-      }
-      
-      // Add slight randomness for variety
-      const randomJitter = Math.random() * 3;
-
-      return {
-        question: q,
-        score: priorityScore + randomJitter
-      };
+      if (userFails > 0) priorityScore += userFails * 10;
+      return { question: q, score: priorityScore + (Math.random() * 2) };
     });
 
-    // Sort descending by score
     scoredPool.sort((a, b) => b.score - a.score);
-
-    // Pick top items
     const selected = scoredPool.slice(0, size).map(item => item.question);
-
-    // Shuffle the selected so traps and retries are distributed smoothly
     return selected.sort(() => Math.random() - 0.5);
   }
 
-  // Navigation
+  // View Navigation
   function switchView(viewName) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
     const target = document.getElementById(`view-${viewName}`);
     if (target) target.classList.add('active');
+
+    const targetTab = document.querySelector(`.nav-tab[data-tab="${viewName}"]`);
+    if (targetTab) targetTab.classList.add('active');
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (viewName === 'home') checkResumeBanner();
+    if (viewName === 'home') {
+      stopTimer();
+      checkResumeBanner();
+      renderStatsHeader();
+    } else if (viewName === 'placas') {
+      stopTimer();
+      renderPlacasCatalog('todas');
+    } else if (viewName === 'conquistas') {
+      stopTimer();
+      renderMissionsView();
+    }
   }
 
   function checkResumeBanner() {
@@ -164,18 +278,13 @@
       const q = state.session.queue;
       const cur = state.session.currentIndex;
       document.getElementById('resume-title').textContent = `${state.session.title}`;
-      document.getElementById('resume-desc').textContent = `Questão ${cur + 1} de ${q.length} • Salvo automaticamente`;
+      document.getElementById('resume-desc').textContent = `Questão ${cur + 1} de ${q.length} • Pausado em ${Math.floor(state.session.timerSeconds / 60)}m ${state.session.timerSeconds % 60}s`;
       banner.style.display = 'flex';
     } else {
       banner.style.display = 'none';
     }
-
-    // Update streak and hearts
-    const streakEl = document.getElementById('stat-streak');
-    if (streakEl) streakEl.textContent = state.userStats.streak;
   }
 
-  // Selector Size Choice (10, 20, 30)
   function selectSize(size) {
     state.selectedSize = size;
     document.querySelectorAll('.selector-btn').forEach(b => {
@@ -186,8 +295,8 @@
   }
 
   // Start Session
-  function startSession(title, filterCategory = null) {
-    const queue = generateSessionQueue(state.selectedSize, filterCategory);
+  function startSession(title, filterCategory = null, onlyPlates = false) {
+    const queue = generateSessionQueue(state.selectedSize, filterCategory, onlyPlates);
 
     state.session = {
       title: title || `Treino (${state.selectedSize} questões)`,
@@ -196,24 +305,26 @@
       totalInitial: queue.length,
       correctCount: 0,
       mistakesCount: 0,
+      timerSeconds: 0,
       completed: false,
-      answeredMap: {} // index -> { selectedIdx, isCorrect }
+      consecutiveCorrect: 0
     };
 
     savePersisted();
     switchView('quiz');
+    startTimer();
     renderQuestion();
   }
 
-  // Resume Existing Session
   function resumeSession() {
     if (state.session && !state.session.completed) {
       switchView('quiz');
+      startTimer();
       renderQuestion();
     }
   }
 
-  // Render Current Question in Game View
+  // Render Question
   function renderQuestion() {
     const sess = state.session;
     if (!sess || sess.currentIndex >= sess.queue.length) {
@@ -225,13 +336,15 @@
     const total = sess.queue.length;
     const current = sess.currentIndex + 1;
 
-    // Progress Bar
+    // Progress Bar & Counter
     const pct = ((current - 1) / total) * 100;
     const bar = document.getElementById('quiz-bar-fill');
     if (bar) bar.style.width = `${pct}%`;
 
     const counter = document.getElementById('quiz-counter');
     if (counter) counter.textContent = `${current}/${total}`;
+
+    updateTimerDisplay();
 
     // Badges
     const badgeContainer = document.getElementById('q-badges');
@@ -243,12 +356,11 @@
       badgeContainer.innerHTML += `<span class="badge-tag badge-freq">⭐ Cai Muito na Prova</span>`;
     }
 
-    // If this question is being repeated because of a previous error
     if ((state.userDifficulty[q.id] || 0) > 0) {
-      badgeContainer.innerHTML += `<span class="badge-tag" style="background: rgba(139, 92, 246, 0.2); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.4);">🔄 Revisando Erro</span>`;
+      badgeContainer.innerHTML += `<span class="badge-tag" style="background: rgba(139, 92, 246, 0.2); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.4);">🔄 Revisando Erro</span>`;
     }
 
-    badgeContainer.innerHTML += `<span class="badge-tag badge-module">${q.module.split('-')[0].trim()}</span>`;
+    badgeContainer.innerHTML += `<span class="badge-tag badge-module">${(q.module || 'Geral').split('-')[0].trim()}</span>`;
 
     // Plate Image
     const plateWrapper = document.getElementById('q-plate-wrapper');
@@ -265,11 +377,10 @@
     // Question Text
     document.getElementById('q-text').textContent = q.question;
 
-    // Hide feedback drawer
-    const fbBox = document.getElementById('feedback-box');
-    fbBox.style.display = 'none';
+    // Hide feedback
+    document.getElementById('feedback-box').style.display = 'none';
 
-    // Prepare Alternatives
+    // Alternatives
     const answersContainer = document.getElementById('answers-stack');
     answersContainer.innerHTML = '';
 
@@ -294,7 +405,7 @@
     });
   }
 
-  // User Selects an Answer
+  // Answer Selection
   function selectAnswer(selectedIdx) {
     const sess = state.session;
     const q = sess.queue[sess.currentIndex];
@@ -302,7 +413,6 @@
     const chosen = opts[selectedIdx];
     const isCorrect = chosen.isCorrect;
 
-    // Disable all options clicks
     const cards = document.querySelectorAll('.answer-card');
     cards.forEach((c, i) => {
       c.style.pointerEvents = 'none';
@@ -311,31 +421,33 @@
     });
 
     state.userStats.totalAnswered++;
+
     if (isCorrect) {
       state.userStats.totalCorrect++;
       sess.correctCount++;
+      sess.consecutiveCorrect = (sess.consecutiveCorrect || 0) + 1;
+      addXP(10);
       soundfx.playCorrect();
 
-      // Lower difficulty for this question since user succeeded
+      if (sess.consecutiveCorrect >= 10) checkAchievement('master_10');
+      if (q.is_trap) checkAchievement('trap_slayer');
+
       if (state.userDifficulty[q.id]) {
         state.userDifficulty[q.id] = Math.max(0, state.userDifficulty[q.id] - 1);
       }
     } else {
       sess.mistakesCount++;
+      sess.consecutiveCorrect = 0;
       soundfx.playWrong();
 
-      // Track failure to repeat!
       state.userDifficulty[q.id] = (state.userDifficulty[q.id] || 0) + 1;
 
-      // GAME MECHANIC: RE-INSERT QUESTION AT THE END UNTIL USER MASTER IT!
-      // This guarantees the candidate leaves the round knowing the answer
-      const clonedQuestion = { ...q, cachedOptions: null };
-      sess.queue.push(clonedQuestion);
+      // Smart repeat: re-insert at the end
+      const cloned = { ...q, cachedOptions: null };
+      sess.queue.push(cloned);
     }
 
     savePersisted();
-
-    // Show Feedback Drawer
     showFeedback(isCorrect, q, !isCorrect);
   }
 
@@ -346,13 +458,13 @@
     const fbRepeat = document.getElementById('feedback-repeat-notice');
 
     fbStatus.className = `feedback-status ${isCorrect ? 'correct' : 'wrong'}`;
-    fbStatus.innerHTML = isCorrect ? '✨ Resposta Correta!' : '❌ Não foi dessa vez!';
+    fbStatus.innerHTML = isCorrect ? '✨ Resposta Correta! (+10 XP)' : '❌ Não foi dessa vez!';
 
     fbExp.innerHTML = `<strong>Fundamentação:</strong> ${q.explanation || 'Conforme as normas do CTB e Resoluções vigentes do CONTRAN.'}`;
 
     if (willRepeat) {
       fbRepeat.style.display = 'block';
-      fbRepeat.textContent = '🔄 Esta questão foi adicionada ao final da fila para você tentar de novo até acertar!';
+      fbRepeat.textContent = '🔄 Esta questão voltará ao final da rodada para você repetir até acertar!';
     } else {
       fbRepeat.style.display = 'none';
     }
@@ -368,12 +480,25 @@
     renderQuestion();
   }
 
-  // Finish Session & Show Result
+  // Finish Session
   function finishSession() {
+    stopTimer();
     const sess = state.session;
     sess.completed = true;
     state.userStats.sessionsCompleted++;
-    state.session = null; // Clear active session so banner disappears
+
+    checkAchievement('first_play');
+    if (sess.totalInitial === 10) checkAchievement('speed_demon');
+
+    // Bonus XP for finishing
+    addXP(30);
+
+    const timeSpent = sess.timerSeconds;
+    const m = Math.floor(timeSpent / 60);
+    const s = timeSpent % 60;
+    const timeFormatted = `${m}m ${s}s`;
+
+    state.session = null;
     savePersisted();
 
     const total = sess.totalInitial;
@@ -383,36 +508,97 @@
 
     document.getElementById('res-heading').textContent = passed ? 'Mandou Bem Demais! 🚀' : 'Treino Concluído! 🎯';
     document.getElementById('res-subheading').textContent = passed 
-      ? `Você teve ${pct}% de aproveitamento. Mantendo esse ritmo você é aprovado com louvor no Detran!`
-      : `Você repetiu até fixar as que errou! A cada treino seu cérebro grava os detalhes do CTB.`;
+      ? `Você teve ${pct}% de precisão em ${timeFormatted}. Se fizer a prova hoje, está aprovado!`
+      : `Você repetiu todas as questões que errou até fixar o conteúdo. Tempo: ${timeFormatted}.`;
 
     document.getElementById('kpi-acertos').textContent = `${correct}`;
     document.getElementById('kpi-erros').textContent = `${sess.mistakesCount}`;
-    document.getElementById('kpi-pct').textContent = `${pct}%`;
+    document.getElementById('kpi-tempo').textContent = timeFormatted;
 
     switchView('result');
   }
 
-  // Initialize
+  // View: Placas Catalog
+  function renderPlacasCatalog(filterCat = 'todas') {
+    const grid = document.getElementById('plates-catalog-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const list = Object.values(state.plates).filter(p => {
+      if (filterCat === 'regulamentacao') return p.code.startsWith('R-');
+      if (filterCat === 'advertencia') return p.code.startsWith('A-');
+      if (filterCat === 'indicacao') return !p.code.startsWith('R-') && !p.code.startsWith('A-');
+      return true;
+    });
+
+    list.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'plate-card-item';
+      card.innerHTML = `
+        <img src="${p.image}" class="plate-card-img" alt="${p.code}" loading="lazy"/>
+        <div class="plate-card-code">${p.code}</div>
+        <div class="plate-card-title">${p.name || ''}</div>
+      `;
+      card.onclick = () => {
+        // Start an instant question quiz around this plate
+        startSession(`Treino da Placa ${p.code}`, null, false);
+      };
+      grid.appendChild(card);
+    });
+  }
+
+  // View: Missions & Achievements
+  function renderMissionsView() {
+    const container = document.getElementById('missions-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    ACHIEVEMENTS_DEF.forEach(ach => {
+      const isClaimed = state.achievements.includes(ach.id);
+      const card = document.createElement('div');
+      card.className = `mission-card ${isClaimed ? 'mission-claimed' : ''}`;
+      card.innerHTML = `
+        <div class="mission-icon">${ach.icon}</div>
+        <div class="mission-info">
+          <div class="mission-title">${ach.title} ${isClaimed ? '✓' : ''}</div>
+          <div class="mission-desc">${ach.desc}</div>
+        </div>
+        <div class="mission-reward">+${ach.xp} XP</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Init
   window.addEventListener('DOMContentLoaded', () => {
     loadPersisted();
+    renderStatsHeader();
     checkResumeBanner();
 
-    // Size selector buttons
+    // Size selectors
     document.querySelectorAll('.selector-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const size = parseInt(btn.getAttribute('data-size'), 10);
         selectSize(size);
       });
     });
+
+    // Nav tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        switchView(tabName);
+      });
+    });
   });
 
-  // Export public API
+  // Public API
   window.cnhApp = {
     switchView,
     selectSize,
     startSession,
     resumeSession,
-    nextQuestion
+    nextQuestion,
+    renderPlacasCatalog
   };
 })();
