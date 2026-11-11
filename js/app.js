@@ -79,7 +79,16 @@
       if (ach) state.achievements = JSON.parse(ach);
 
       const mastered = localStorage.getItem(STORAGE_KEY_MASTERED);
-      if (mastered) state.masteredQuestionIds = JSON.parse(mastered);
+      if (mastered) {
+        state.masteredQuestionIds = JSON.parse(mastered);
+      } else {
+        state.masteredQuestionIds = [];
+      }
+
+      // MIGRAÇÃO / RECONSTITUIÇÃO INTELIGENTE DO HISTÓRICO:
+      // Se o usuário já respondeu questões no passado (XP, totalCorrect ou difficulty),
+      // identificamos quais questões ele já fez e acertou para não zerar as estatísticas!
+      reconstitutePastProgress();
 
       const unmasteredPref = localStorage.getItem(STORAGE_KEY_ONLY_UNMASTERED);
       if (unmasteredPref !== null) {
@@ -110,7 +119,75 @@
     }
   }
 
-  function addXP(amount) {
+  // Reconstrói o progresso por módulo caso o usuário venha de versões anteriores
+  function reconstitutePastProgress() {
+    const totalCorrect = state.userStats.totalCorrect || 0;
+    const totalAnswered = state.userStats.totalAnswered || 0;
+    const answeredFromDiff = Object.keys(state.userDifficulty || {}).map(k => parseInt(k, 10));
+
+    // Se a lista de mastered estiver vazia mas houver acertos ou questões praticadas:
+    if (state.masteredQuestionIds.length === 0 && (totalCorrect > 0 || totalAnswered > 0 || answeredFromDiff.length > 0)) {
+      const qById = {};
+      state.questions.forEach(q => { qById[q.id] = q; });
+
+      // 1. As questões que estão com falha zerada (resolvidas/aprendidas) são consideradas acertadas
+      const recoveredSet = new Set();
+      answeredFromDiff.forEach(qid => {
+        if ((state.userDifficulty[qid] || 0) === 0) {
+          recoveredSet.add(qid);
+        }
+      });
+
+      // 2. Se o totalCorrect for maior que o número recuperado acima, pegamos as primeiras questões
+      // que o app costumava servir nos treinos para preencher os acertos que o usuário realizou
+      let needed = Math.max(0, totalCorrect - recoveredSet.size);
+      if (needed > 0) {
+        for (let i = 0; i < state.questions.length && needed > 0; i++) {
+          const qid = state.questions[i].id;
+          if (!recoveredSet.has(qid) && (!state.userDifficulty[qid] || state.userDifficulty[qid] === 0)) {
+            recoveredSet.add(qid);
+            needed--;
+          }
+        }
+      }
+
+      state.masteredQuestionIds = Array.from(recoveredSet);
+
+      // Recompõe também a distribuição proporcional nos categoryStats
+      if (!state.userStats.categoryStats || 
+          (state.userStats.categoryStats.sinalizacao.totalAttempts === 0 &&
+           state.userStats.categoryStats.infracoes.totalAttempts === 0 &&
+           state.userStats.categoryStats.defensiva.totalAttempts === 0 &&
+           state.userStats.categoryStats.socorros_mecanica_meioambiente.totalAttempts === 0)) {
+        
+        state.userStats.categoryStats = {
+          sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+          infracoes: { totalAttempts: 0, correctAttempts: 0 },
+          defensiva: { totalAttempts: 0, correctAttempts: 0 },
+          socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+        };
+
+        state.masteredQuestionIds.forEach(qid => {
+          const q = qById[qid];
+          if (q && state.userStats.categoryStats[q.category]) {
+            state.userStats.categoryStats[q.category].correctAttempts++;
+            state.userStats.categoryStats[q.category].totalAttempts++;
+          }
+        });
+
+        // Adiciona os erros registrados nas categorias corretas
+        Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
+          const qid = parseInt(qidStr, 10);
+          const q = qById[qid];
+          if (q && fails > 0 && state.userStats.categoryStats[q.category]) {
+            state.userStats.categoryStats[q.category].totalAttempts += fails;
+          }
+        });
+      }
+
+      savePersisted();
+    }
+  }
     state.userStats.xp += amount;
     const newLevel = Math.floor(Math.sqrt(state.userStats.xp / 100)) + 1;
     state.userStats.level = newLevel;
