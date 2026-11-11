@@ -60,7 +60,9 @@
 
   function loadPersisted() {
     try {
-      const stats = localStorage.getItem(STORAGE_KEY_STATS);
+      // 1. Tenta carregar v4, com fallback transparente para v3
+      let stats = localStorage.getItem(STORAGE_KEY_STATS);
+      if (!stats) stats = localStorage.getItem('cnh_stats_v3');
       if (stats) state.userStats = { ...state.userStats, ...JSON.parse(stats) };
 
       if (!state.userStats.categoryStats) {
@@ -72,10 +74,12 @@
         };
       }
 
-      const diff = localStorage.getItem(STORAGE_KEY_DIFFICULTY);
+      let diff = localStorage.getItem(STORAGE_KEY_DIFFICULTY);
+      if (!diff) diff = localStorage.getItem('cnh_user_difficulty_v3');
       if (diff) state.userDifficulty = JSON.parse(diff);
 
-      const ach = localStorage.getItem(STORAGE_KEY_ACHIEVEMENTS);
+      let ach = localStorage.getItem(STORAGE_KEY_ACHIEVEMENTS);
+      if (!ach) ach = localStorage.getItem('cnh_achievements_v3');
       if (ach) state.achievements = JSON.parse(ach);
 
       const mastered = localStorage.getItem(STORAGE_KEY_MASTERED);
@@ -86,8 +90,6 @@
       }
 
       // MIGRAÇÃO / RECONSTITUIÇÃO INTELIGENTE DO HISTÓRICO:
-      // Se o usuário já respondeu questões no passado (XP, totalCorrect ou difficulty),
-      // identificamos quais questões ele já fez e acertou para não zerar as estatísticas!
       reconstitutePastProgress();
 
       const unmasteredPref = localStorage.getItem(STORAGE_KEY_ONLY_UNMASTERED);
@@ -95,7 +97,8 @@
         state.onlyUnmastered = JSON.parse(unmasteredPref);
       }
 
-      const sess = localStorage.getItem(STORAGE_KEY_SESSION);
+      let sess = localStorage.getItem(STORAGE_KEY_SESSION);
+      if (!sess) sess = localStorage.getItem('cnh_active_session_v3');
       if (sess) state.session = JSON.parse(sess);
     } catch (e) {
       console.warn('Persistence read error:', e);
@@ -188,6 +191,8 @@
       savePersisted();
     }
   }
+
+  function addXP(amount) {
     state.userStats.xp += amount;
     const newLevel = Math.floor(Math.sqrt(state.userStats.xp / 100)) + 1;
     state.userStats.level = newLevel;
