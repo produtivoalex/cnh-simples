@@ -310,7 +310,16 @@
     if (document.hidden) {
       stopTimer();
       savePersisted();
+      if (window.cnhSync) window.cnhSync.pushToCloud().catch(() => {});
     } else {
+      // Quando o usuário volta ao app/aba, checa automaticamente se houve progresso novo em outro dispositivo!
+      if (window.cnhSync) {
+        window.cnhSync.autoCheckSync(() => {
+          loadPersisted();
+          renderStatsHeader();
+          renderModuleProgress();
+        });
+      }
       if (state.session && !state.session.completed && document.getElementById('view-quiz').classList.contains('active')) {
         startTimer();
       }
@@ -629,8 +638,8 @@
     // Auto-save on every single answered question
     savePersisted();
 
-    // Auto-sync na nuvem a cada 5 questões respondidas em segundo plano (sem travar a tela)
-    if (state.userStats.totalAnswered % 5 === 0 && window.cnhSync) {
+    // Auto-sync imediato na nuvem a cada questão respondida (em segundo plano sem travar nada)
+    if (window.cnhSync) {
       window.cnhSync.pushToCloud().catch(() => {});
     }
 
@@ -842,6 +851,15 @@
     renderStatsHeader();
     renderModuleProgress();
     checkResumeBanner();
+
+    // Sincronização automática com a nuvem logo ao abrir o app (se já sincronizou com ID antes)
+    if (window.cnhSync) {
+      window.cnhSync.autoCheckSync((payload) => {
+        loadPersisted();
+        renderStatsHeader();
+        renderModuleProgress();
+      });
+    }
 
     document.querySelectorAll('.selector-btn').forEach(btn => {
       btn.addEventListener('click', () => {

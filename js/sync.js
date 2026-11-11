@@ -50,7 +50,7 @@
       };
     },
 
-    // Apply data directly to localStorage
+    // Apply data directly to localStorage if newer or valid
     applyPayload(data) {
       if (!data || !data.stats) return false;
       if (data.code) localStorage.setItem('cnh_user_code', data.code);
@@ -58,15 +58,17 @@
       if (data.difficulty) localStorage.setItem('cnh_user_difficulty_v4', JSON.stringify(data.difficulty));
       if (data.achievements) localStorage.setItem('cnh_achievements_v4', JSON.stringify(data.achievements));
       if (data.mastered) localStorage.setItem('cnh_mastered_qs_v4', JSON.stringify(data.mastered));
+      if (data.timestamp) localStorage.setItem('cnh_last_sync_ts', String(data.timestamp));
       return true;
     },
 
-    // 1. PUSH PROGRESS TO CLOUD USING JUST DRIVER ID
+    // 1. PUSH PROGRESS TO CLOUD USING JUST DRIVER ID (Auto-sync imediato e sem ruído)
     async pushToCloud(customCode = null) {
       const code = customCode || this.getUserCode();
       const topic = this.getCloudTopic(code);
       const payload = this.getLocalPayload();
       payload.code = code;
+      payload.timestamp = Date.now();
 
       try {
         const resp = await fetch(`https://ntfy.sh/${topic}`, {
@@ -77,6 +79,9 @@
           },
           body: JSON.stringify(payload)
         });
+        if (resp.ok) {
+          localStorage.setItem('cnh_last_sync_ts', String(payload.timestamp));
+        }
         return resp.ok;
       } catch (e) {
         console.warn('Sync push error:', e);
@@ -85,7 +90,7 @@
     },
 
     // 2. PULL PROGRESS FROM CLOUD USING JUST DRIVER ID
-    async pullFromCloud(targetCode) {
+    async pullFromCloud(targetCode, silentIfEqual = false) {
       if (!targetCode) return { success: false, error: 'Código não informado' };
       const code = targetCode.trim().toUpperCase();
       const topic = this.getCloudTopic(code);
@@ -97,22 +102,47 @@
         const text = await resp.text();
         const lines = text.trim().split('\n').filter(Boolean);
         if (lines.length === 0) {
-          return { success: false, error: `Nenhum progresso encontrado na nuvem para o ID ${code}. Salve seu progresso no aparelho de origem primeiro!` };
+          return { success: false, error: `Nenhum progresso encontrado na nuvem para o ID ${code}.` };
         }
 
-        // Get the latest message
+        // Get the latest message from cloud
         const lastMsg = JSON.parse(lines[lines.length - 1]);
         const payload = typeof lastMsg.message === 'string' ? JSON.parse(lastMsg.message) : lastMsg.message;
 
         if (payload && payload.stats) {
-          this.applyPayload(payload);
-          return { success: true, payload };
+          const localTs = parseInt(localStorage.getItem('cnh_last_sync_ts') || '0', 10);
+          const cloudTs = payload.timestamp || 0;
+
+          // Se a nuvem tiver dados mais novos ou com mais questões respondidas, atualiza
+          const localTotal = JSON.parse(localStorage.getItem('cnh_stats_v4') || '{}').totalAnswered || 0;
+          const cloudTotal = payload.stats.totalAnswered || 0;
+
+          if (cloudTs > localTs || cloudTotal > localTotal) {
+            this.applyPayload(payload);
+            return { success: true, updated: true, payload };
+          }
+          return { success: true, updated: false, payload };
         }
         return { success: false, error: 'Formato de progresso corrompido' };
       } catch (e) {
         console.error('Sync pull error:', e);
         return { success: false, error: e.message || 'Erro de comunicação' };
       }
+    },
+
+    // 3. AUTO-SYNC BIDIRECIONAL AO INICIAR / FOCAR O APP
+    async autoCheckSync(onUpdateCallback) {
+      const code = this.getUserCode();
+      if (!code) return;
+
+      try {
+        const res = await this.pullFromCloud(code, true);
+        if (res.success && res.updated) {
+          if (typeof onUpdateCallback === 'function') {
+            onUpdateCallback(res.payload);
+          }
+        }
+      } catch (e) {}
     },
 
     // Portable string export fallback
