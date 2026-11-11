@@ -122,54 +122,25 @@
     }
   }
 
-  // Reconstrói o progresso por módulo caso o usuário venha de versões anteriores
+  // Reconstrói o progresso estritamente com base nos dados reais do usuário (sem estimativas artificiais)
   function reconstitutePastProgress() {
-    const totalCorrect = state.userStats.totalCorrect || 0;
-    const totalAnswered = state.userStats.totalAnswered || 0;
-    const answeredFromDiff = Object.keys(state.userDifficulty || {}).map(k => parseInt(k, 10));
-
-    // Se o usuário tem acertos ou questões praticadas
     const qById = {};
     state.questions.forEach(q => { qById[q.id] = q; });
 
-    let recoveredSet = new Set(state.masteredQuestionIds || []);
-    answeredFromDiff.forEach(qid => {
-      if ((state.userDifficulty[qid] || 0) === 0) {
-        recoveredSet.add(qid);
+    // Mantém exatamente o conjunto de IDs que o usuário acertou
+    const realMastered = new Set(state.masteredQuestionIds || []);
+
+    // Se houver questões com dificuldade 0 gravadas, adiciona-as
+    Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
+      const qid = parseInt(qidStr, 10);
+      if (fails === 0) {
+        realMastered.add(qid);
       }
     });
 
-    // Se as questões salvas no mastered forem todas de uma única categoria (ex: 1..42 só sinalização),
-    // mas o usuário já treinou no geral (XP alto, totalAnswered > 40), redistribuímos os acertos
-    // proporcionalmente entre as 4 áreas para que NENHUM módulo fique injustamente em 100% restante!
-    const allAreSinalizacao = recoveredSet.size > 0 && Array.from(recoveredSet).every(id => qById[id] && qById[id].category === 'sinalizacao');
-    const effectiveCorrectCount = Math.max(totalCorrect, recoveredSet.size, 42);
+    state.masteredQuestionIds = Array.from(realMastered);
 
-    if (allAreSinalizacao || recoveredSet.size < effectiveCorrectCount) {
-      const categories = ['sinalizacao', 'infracoes', 'defensiva', 'socorros_mecanica_meioambiente'];
-      
-      // Divide os acertos totais entre as 4 categorias oficiais
-      const perCategory = Math.max(8, Math.floor(effectiveCorrectCount / categories.length));
-      const newMastered = new Set(recoveredSet);
-
-      categories.forEach(cat => {
-        let added = 0;
-        const catQs = state.questions.filter(q => q.category === cat);
-        for (const q of catQs) {
-          if (added >= perCategory) break;
-          if (!newMastered.has(q.id)) {
-            newMastered.add(q.id);
-            added++;
-          }
-        }
-      });
-
-      recoveredSet = newMastered;
-    }
-
-    state.masteredQuestionIds = Array.from(recoveredSet);
-
-    // Reconstrói categoryStats consistente para todos os 4 módulos
+    // Reconstrói as estatísticas de cada categoria estritamente com base nas questões realmente respondidas
     state.userStats.categoryStats = {
       sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
       infracoes: { totalAttempts: 0, correctAttempts: 0 },
@@ -177,6 +148,7 @@
       socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
     };
 
+    // Computa acertos reais por módulo
     state.masteredQuestionIds.forEach(qid => {
       const q = qById[qid];
       if (q && state.userStats.categoryStats[q.category]) {
@@ -185,7 +157,7 @@
       }
     });
 
-    // Adiciona os erros registrados nas categorias corretas
+    // Computa erros reais por módulo registrados no histórico
     Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
       const qid = parseInt(qidStr, 10);
       const q = qById[qid];
