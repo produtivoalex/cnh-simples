@@ -39,6 +39,7 @@
         stats: JSON.parse(localStorage.getItem('cnh_stats_v4') || '{}'),
         difficulty: JSON.parse(localStorage.getItem('cnh_user_difficulty_v4') || '{}'),
         achievements: JSON.parse(localStorage.getItem('cnh_achievements_v4') || '[]'),
+        mastered: JSON.parse(localStorage.getItem('cnh_mastered_qs_v4') || '[]'),
         timestamp: Date.now()
       };
       return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -56,6 +57,7 @@
         if (data.stats) localStorage.setItem('cnh_stats_v4', JSON.stringify(data.stats));
         if (data.difficulty) localStorage.setItem('cnh_user_difficulty_v4', JSON.stringify(data.difficulty));
         if (data.achievements) localStorage.setItem('cnh_achievements_v4', JSON.stringify(data.achievements));
+        if (data.mastered) localStorage.setItem('cnh_mastered_qs_v4', JSON.stringify(data.mastered));
 
         return true;
       } catch (e) {
@@ -67,3 +69,4 @@
 
   window.cnhSync = sync;
 })();
+

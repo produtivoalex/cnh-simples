@@ -84,53 +84,175 @@
             </button>
           </div>
 
-          <button class="btn-play-primary" onclick="window.cnhApp.startSession('Treino Inteligente')">
+          <!-- Filtro: Apenas Inéditas / Não acertadas -->
+          <div style="margin-top: 14px; padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="window.cnhApp.toggleOnlyUnmastered()">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">⚡</span>
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF;">Priorizar Questões Inéditas / com Erros</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Não repetir questões que você já dominou</div>
+              </div>
+            </div>
+            <input type="checkbox" id="chk-only-unmastered" checked style="accent-color: var(--brazil-green); width: 18px; height: 18px; cursor: pointer;" onclick="event.stopPropagation(); window.cnhApp.toggleOnlyUnmastered();"/>
+          </div>
+
+          <button class="btn-play-primary" style="margin-top: 12px;" onclick="window.cnhApp.startSession('Treino Inteligente')">
             <span>Iniciar Treino Desafio</span>
             <span>🚗💨</span>
           </button>
         </div>
 
-        <!-- Modos Específicos -->
-        <div class="modes-title">
-          <span>Modos de Treino</span>
-          <span style="color: #34D399;">1.500 Questões</span>
+        <!-- Trilhas dos 4 Módulos Oficiais do Senatran -->
+        <div class="modes-title" style="margin-top: 10px;">
+          <span>Módulos Oficiais (Senatran)</span>
+          <span style="color: var(--brazil-yellow); font-size: 0.75rem;">1.500 Questões</span>
         </div>
 
-        <div class="modes-grid">
-          <!-- Modo Exclusivo de Placas -->
-          <div class="mode-card" onclick="window.cnhApp.startSession('🛑 Estudo Exclusivo de Placas', null, true)">
-            <div class="mode-card-icon">🛑</div>
-            <div>
-              <div class="mode-card-name">Apenas Placas</div>
-              <div class="mode-card-desc">100% focado em sinalização visual</div>
+        <div class="module-track-list" id="module-tracks-container">
+          <!-- Módulo 1 -->
+          <div class="module-track-card" onclick="window.cnhApp.startSession('Módulo 1: Sinalização e Vias', 'sinalizacao')">
+            <div class="module-track-header">
+              <div class="module-track-left">
+                <div class="module-track-icon">🚦</div>
+                <div>
+                  <div class="module-track-name">1. Sinalização e Vias</div>
+                  <div class="module-track-sub">Placas, Marcas, Semáforos e Regras • 411 q.</div>
+                </div>
+              </div>
+              <div class="module-track-right">
+                <div class="module-track-acc" id="mod1-acc">0% acerto</div>
+                <div class="module-track-remaining" id="mod1-done">Falta 100%</div>
+              </div>
             </div>
+            <div class="module-bars-row">
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Fechamento</span>
+                <div class="module-bar-track">
+                  <div id="mod1-bar-done" class="module-bar-fill-done"></div>
+                </div>
+              </div>
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Precisão</span>
+                <div class="module-bar-track">
+                  <div id="mod1-bar-acc" class="module-bar-fill-acc"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulo 2 -->
+          <div class="module-track-card" onclick="window.cnhApp.startSession('Módulo 2: Legislação e Infrações', 'infracoes')">
+            <div class="module-track-header">
+              <div class="module-track-left">
+                <div class="module-track-icon">⚖️</div>
+                <div>
+                  <div class="module-track-name">2. Legislação e Infrações</div>
+                  <div class="module-track-sub">CTB, Multas, Pontos e Penalidades • 205 q.</div>
+                </div>
+              </div>
+              <div class="module-track-right">
+                <div class="module-track-acc" id="mod2-acc">0% acerto</div>
+                <div class="module-track-remaining" id="mod2-done">Falta 100%</div>
+              </div>
+            </div>
+            <div class="module-bars-row">
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Fechamento</span>
+                <div class="module-bar-track">
+                  <div id="mod2-bar-done" class="module-bar-fill-done"></div>
+                </div>
+              </div>
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Precisão</span>
+                <div class="module-bar-track">
+                  <div id="mod2-bar-acc" class="module-bar-fill-acc"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulo 3 -->
+          <div class="module-track-card" onclick="window.cnhApp.startSession('Módulo 3: Direção Defensiva', 'defensiva')">
+            <div class="module-track-header">
+              <div class="module-track-left">
+                <div class="module-track-icon">🛡️</div>
+                <div>
+                  <div class="module-track-name">3. Direção Defensiva</div>
+                  <div class="module-track-sub">Segurança, Frenagem, Condições Adversas • 623 q.</div>
+                </div>
+              </div>
+              <div class="module-track-right">
+                <div class="module-track-acc" id="mod3-acc">0% acerto</div>
+                <div class="module-track-remaining" id="mod3-done">Falta 100%</div>
+              </div>
+            </div>
+            <div class="module-bars-row">
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Fechamento</span>
+                <div class="module-bar-track">
+                  <div id="mod3-bar-done" class="module-bar-fill-done"></div>
+                </div>
+              </div>
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Precisão</span>
+                <div class="module-bar-track">
+                  <div id="mod3-bar-acc" class="module-bar-fill-acc"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulo 4 -->
+          <div class="module-track-card" onclick="window.cnhApp.startSession('Módulo 4: Socorros, Mecânica e Cidadania', 'socorros_mecanica_meioambiente')">
+            <div class="module-track-header">
+              <div class="module-track-left">
+                <div class="module-track-icon">🩹</div>
+                <div>
+                  <div class="module-track-name">4. Socorros, Mecânica e Cidadania</div>
+                  <div class="module-track-sub">Primeiros Socorros, Motor e Meio Ambiente • 261 q.</div>
+                </div>
+              </div>
+              <div class="module-track-right">
+                <div class="module-track-acc" id="mod4-acc">0% acerto</div>
+                <div class="module-track-remaining" id="mod4-done">Falta 100%</div>
+              </div>
+            </div>
+            <div class="module-bars-row">
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Fechamento</span>
+                <div class="module-bar-track">
+                  <div id="mod4-bar-done" class="module-bar-fill-done"></div>
+                </div>
+              </div>
+              <div class="module-bar-wrap">
+                <span class="module-bar-label">Precisão</span>
+                <div class="module-bar-track">
+                  <div id="mod4-bar-acc" class="module-bar-fill-acc"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modos Especiais de Treino -->
+        <div class="modes-title">
+          <span>Treinos Especiais</span>
+          <span style="color: #34D399;">Foco Específico</span>
+        </div>
+
+        <div class="modes-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;">
+          <!-- Modo Exclusivo de Placas -->
+          <div class="module-track-card" style="padding: 12px; cursor: pointer;" onclick="window.cnhApp.startSession('🛑 Estudo Exclusivo de Placas', null, true)">
+            <div style="font-size: 1.3rem; margin-bottom: 4px;">🛑</div>
+            <div style="font-size: 0.88rem; font-weight: 800; color: #FFF;">Apenas Placas</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">Todas as 146 placas oficiais</div>
           </div>
 
           <!-- Modo Pegadinhas -->
-          <div class="mode-card" onclick="window.cnhApp.startSession('🚨 Foco em Pegadinhas')">
-            <div class="mode-card-icon">🚨</div>
-            <div>
-              <div class="mode-card-name">Pegadinhas</div>
-              <div class="mode-card-desc">As que mais reprovam no Detran</div>
-            </div>
-          </div>
-
-          <!-- Infrações e Penalidades -->
-          <div class="mode-card" onclick="window.cnhApp.startSession('⚖️ Legislação e Infrações', 'infracoes')">
-            <div class="mode-card-icon">⚖️</div>
-            <div>
-              <div class="mode-card-name">Legislação</div>
-              <div class="mode-card-desc">Multas, pontos e crimes</div>
-            </div>
-          </div>
-
-          <!-- Direção Defensiva -->
-          <div class="mode-card" onclick="window.cnhApp.startSession('🛡️ Direção Defensiva', 'defensiva')">
-            <div class="mode-card-icon">🛡️</div>
-            <div>
-              <div class="mode-card-name">Defensiva</div>
-              <div class="mode-card-desc">Prevenção e segurança</div>
-            </div>
+          <div class="module-track-card" style="padding: 12px; cursor: pointer;" onclick="window.cnhApp.startSession('🚨 Foco em Pegadinhas')">
+            <div style="font-size: 1.3rem; margin-bottom: 4px;">🚨</div>
+            <div style="font-size: 0.88rem; font-weight: 800; color: #FFF;">Pegadinhas</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">As que mais reprovam</div>
           </div>
         </div>
       </section>
@@ -252,7 +374,7 @@
             </div>
           </div>
 
-          <button class="btn-play-primary" onclick="window.cnhApp.startSession('Treino Inteligente')">
+          <button class="btn-play-primary" style="margin-top: 18px;" onclick="window.cnhApp.startSession('Treino Inteligente')">
             Jogar Outro Desafio ⚡
           </button>
           <button class="btn-close-quiz" style="width: 100%; border-radius: var(--radius-md); margin-top: 12px; height: 48px;" onclick="window.cnhApp.switchView('home')">

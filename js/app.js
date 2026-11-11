@@ -7,20 +7,30 @@
   const STORAGE_KEY_SESSION = 'cnh_active_session_v4';
   const STORAGE_KEY_DIFFICULTY = 'cnh_user_difficulty_v4';
   const STORAGE_KEY_ACHIEVEMENTS = 'cnh_achievements_v4';
+  const STORAGE_KEY_MASTERED = 'cnh_mastered_qs_v4';
+  const STORAGE_KEY_ONLY_UNMASTERED = 'cnh_only_unmastered_v4';
 
   const state = {
     questions: window.QUESTIONS_DATABASE || [],
     plates: window.PLATES_DATABASE || {},
     selectedSize: 20,
+    onlyUnmastered: true,
     userStats: {
       streak: 1,
       xp: 0,
       level: 1,
       totalAnswered: 0,
       totalCorrect: 0,
-      sessionsCompleted: 0
+      sessionsCompleted: 0,
+      categoryStats: {
+        sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+        infracoes: { totalAttempts: 0, correctAttempts: 0 },
+        defensiva: { totalAttempts: 0, correctAttempts: 0 },
+        socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+      }
     },
     userDifficulty: {},
+    masteredQuestionIds: [],
     achievements: [],
     session: null,
     timerInterval: null
@@ -53,11 +63,28 @@
       const stats = localStorage.getItem(STORAGE_KEY_STATS);
       if (stats) state.userStats = { ...state.userStats, ...JSON.parse(stats) };
 
+      if (!state.userStats.categoryStats) {
+        state.userStats.categoryStats = {
+          sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+          infracoes: { totalAttempts: 0, correctAttempts: 0 },
+          defensiva: { totalAttempts: 0, correctAttempts: 0 },
+          socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+        };
+      }
+
       const diff = localStorage.getItem(STORAGE_KEY_DIFFICULTY);
       if (diff) state.userDifficulty = JSON.parse(diff);
 
       const ach = localStorage.getItem(STORAGE_KEY_ACHIEVEMENTS);
       if (ach) state.achievements = JSON.parse(ach);
+
+      const mastered = localStorage.getItem(STORAGE_KEY_MASTERED);
+      if (mastered) state.masteredQuestionIds = JSON.parse(mastered);
+
+      const unmasteredPref = localStorage.getItem(STORAGE_KEY_ONLY_UNMASTERED);
+      if (unmasteredPref !== null) {
+        state.onlyUnmastered = JSON.parse(unmasteredPref);
+      }
 
       const sess = localStorage.getItem(STORAGE_KEY_SESSION);
       if (sess) state.session = JSON.parse(sess);
@@ -71,6 +98,8 @@
       localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(state.userStats));
       localStorage.setItem(STORAGE_KEY_DIFFICULTY, JSON.stringify(state.userDifficulty));
       localStorage.setItem(STORAGE_KEY_ACHIEVEMENTS, JSON.stringify(state.achievements));
+      localStorage.setItem(STORAGE_KEY_MASTERED, JSON.stringify(state.masteredQuestionIds));
+      localStorage.setItem(STORAGE_KEY_ONLY_UNMASTERED, JSON.stringify(state.onlyUnmastered));
       if (state.session) {
         localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(state.session));
       } else {
@@ -96,6 +125,55 @@
       if (def) addXP(def.xp);
       savePersisted();
     }
+  }
+
+  function renderModuleProgress() {
+    const modules = [
+      { id: 1, key: 'sinalizacao', total: 411 },
+      { id: 2, key: 'infracoes', total: 205 },
+      { id: 3, key: 'defensiva', total: 623 },
+      { id: 4, key: 'socorros_mecanica_meioambiente', total: 261 }
+    ];
+
+    const masteredSet = new Set(state.masteredQuestionIds || []);
+
+    modules.forEach(m => {
+      // Questions mastered in this module
+      const modQs = state.questions.filter(q => q.category === m.key);
+      const totalCount = modQs.length || m.total;
+      const masteredInMod = modQs.filter(q => masteredSet.has(q.id)).length;
+      
+      const pctDone = Math.min(100, Math.round((masteredInMod / totalCount) * 100));
+      const pctRemaining = 100 - pctDone;
+
+      const catStats = (state.userStats.categoryStats && state.userStats.categoryStats[m.key]) || { totalAttempts: 0, correctAttempts: 0 };
+      const pctAcc = catStats.totalAttempts > 0 
+        ? Math.round((catStats.correctAttempts / catStats.totalAttempts) * 100) 
+        : 0;
+
+      const accEl = document.getElementById(`mod${m.id}-acc`);
+      const doneEl = document.getElementById(`mod${m.id}-done`);
+      const barDone = document.getElementById(`mod${m.id}-bar-done`);
+      const barAcc = document.getElementById(`mod${m.id}-bar-acc`);
+
+      if (accEl) accEl.textContent = `${pctAcc}% acerto`;
+      if (doneEl) {
+        doneEl.textContent = pctRemaining === 0 ? '🏆 Fechado!' : `Falta ${pctRemaining}% (${totalCount - masteredInMod} q.)`;
+        doneEl.style.color = pctRemaining === 0 ? 'var(--brazil-green)' : 'var(--brazil-yellow)';
+      }
+      if (barDone) barDone.style.width = `${pctDone}%`;
+      if (barAcc) barAcc.style.width = `${pctAcc}%`;
+    });
+
+    const chk = document.getElementById('chk-only-unmastered');
+    if (chk) chk.checked = !!state.onlyUnmastered;
+  }
+
+  function toggleOnlyUnmastered() {
+    state.onlyUnmastered = !state.onlyUnmastered;
+    const chk = document.getElementById('chk-only-unmastered');
+    if (chk) chk.checked = state.onlyUnmastered;
+    savePersisted();
   }
 
   function renderStatsHeader() {
@@ -189,15 +267,65 @@
       pool = pool.filter(q => q.category === filterCategory);
     }
 
-    const scoredPool = pool.map(q => {
+    const masteredSet = new Set(state.masteredQuestionIds || []);
+
+    // Filter or deprioritize already mastered questions if user opted to skip them
+    let candidatePool = pool;
+    if (state.onlyUnmastered) {
+      const unmastered = pool.filter(q => !masteredSet.has(q.id) || (state.userDifficulty[q.id] || 0) > 0);
+      if (unmastered.length >= size) {
+        candidatePool = unmastered;
+      } else if (unmastered.length > 0) {
+        // Use all unmastered first, then fill remainder with least recently seen
+        candidatePool = pool;
+      }
+    }
+
+    // Deduplication within the session: avoid picking questions with identical answers or questions in the same run
+    const scoredPool = candidatePool.map(q => {
       let priorityScore = q.weight || 1;
+      const isMastered = masteredSet.has(q.id);
       const userFails = state.userDifficulty[q.id] || 0;
-      if (userFails > 0) priorityScore += userFails * 10;
-      return { question: q, score: priorityScore + (Math.random() * 2) };
+
+      // Heavy priority to questions user got wrong previously
+      if (userFails > 0) priorityScore += userFails * 15;
+
+      // If user hasn't mastered this question yet, prioritize it heavily
+      if (!isMastered) priorityScore += 20;
+      else priorityScore -= 10; // De-prioritize already mastered questions
+
+      return { question: q, score: priorityScore + (Math.random() * 5) };
     });
 
     scoredPool.sort((a, b) => b.score - a.score);
-    const selected = scoredPool.slice(0, size).map(item => item.question);
+
+    // Pick unique questions and ensure varied concepts in one session
+    const selected = [];
+    const seenAnswers = new Set();
+
+    for (const item of scoredPool) {
+      if (selected.length >= size) break;
+      const q = item.question;
+      const normAns = (q.correct || '').toLowerCase().trim();
+      
+      // If answer is short generic like "Gravíssima." or "O veículo que vem pela direita.", allow only 1 per session
+      if (seenAnswers.has(normAns) && normAns.length < 50 && scoredPool.length > size * 2) {
+        continue;
+      }
+      seenAnswers.add(normAns);
+      selected.push(q);
+    }
+
+    // If needed to reach requested size, fill remainder
+    if (selected.length < size) {
+      for (const item of scoredPool) {
+        if (selected.length >= size) break;
+        if (!selected.includes(item.question)) {
+          selected.push(item.question);
+        }
+      }
+    }
+
     return selected.sort(() => Math.random() - 0.5);
   }
 
@@ -217,6 +345,7 @@
       stopTimer();
       checkResumeBanner();
       renderStatsHeader();
+      renderModuleProgress();
     } else if (viewName === 'placas') {
       stopTimer();
       renderPlacasCatalog('todas');
@@ -374,12 +503,33 @@
 
     state.userStats.totalAnswered++;
 
+    // Track category statistics
+    const cat = q.category || 'sinalizacao';
+    if (!state.userStats.categoryStats) {
+      state.userStats.categoryStats = {
+        sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+        infracoes: { totalAttempts: 0, correctAttempts: 0 },
+        defensiva: { totalAttempts: 0, correctAttempts: 0 },
+        socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+      };
+    }
+    if (!state.userStats.categoryStats[cat]) {
+      state.userStats.categoryStats[cat] = { totalAttempts: 0, correctAttempts: 0 };
+    }
+    state.userStats.categoryStats[cat].totalAttempts++;
+
     if (isCorrect) {
       state.userStats.totalCorrect++;
+      state.userStats.categoryStats[cat].correctAttempts++;
       sess.correctCount++;
       sess.consecutiveCorrect = (sess.consecutiveCorrect || 0) + 1;
       addXP(10);
       soundfx.playCorrect();
+
+      // Mark as mastered (answered correctly)
+      if (!state.masteredQuestionIds.includes(q.id)) {
+        state.masteredQuestionIds.push(q.id);
+      }
 
       if (sess.consecutiveCorrect >= 10) checkAchievement('master_10');
       if (q.is_trap) checkAchievement('trap_slayer');
@@ -391,6 +541,12 @@
       sess.mistakesCount++;
       sess.consecutiveCorrect = 0;
       soundfx.playWrong();
+
+      // If answered incorrectly, remove from mastered list so user practices it again
+      const mIdx = state.masteredQuestionIds.indexOf(q.id);
+      if (mIdx !== -1) {
+        state.masteredQuestionIds.splice(mIdx, 1);
+      }
 
       state.userDifficulty[q.id] = (state.userDifficulty[q.id] || 0) + 1;
 
@@ -548,6 +704,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     loadPersisted();
     renderStatsHeader();
+    renderModuleProgress();
     checkResumeBanner();
 
     document.querySelectorAll('.selector-btn').forEach(btn => {
@@ -572,6 +729,7 @@
     resumeSession,
     nextQuestion,
     renderPlacasCatalog,
+    toggleOnlyUnmastered,
     copySyncPayload,
     applySyncPayload
   };

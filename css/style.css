@@ -15,8 +15,8 @@
   --brazil-blue: #2563EB;
   --brazil-blue-glow: rgba(37, 99, 235, 0.35);
 
-  --accent: #10B981; /* Signal Green default */
-  --accent-gold: #F59E0B; /* Caution Yellow */
+  --accent: #10B981;
+  --accent-gold: #F59E0B;
   --accent-glow: rgba(16, 185, 129, 0.35);
 
   --success: #10B981;
@@ -406,7 +406,7 @@ body {
   transform: scale(0.97);
 }
 
-/* Modes Grid */
+/* Modes Grid & Module Cards */
 .modes-title {
   font-size: 0.82rem;
   text-transform: uppercase;
@@ -418,55 +418,133 @@ body {
   justify-content: space-between;
 }
 
-.modes-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.module-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
-.mode-card {
-  background: rgba(14, 22, 38, 0.88);
+.module-track-card {
+  background: rgba(14, 22, 38, 0.9);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-md);
-  padding: 15px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 100px;
+  gap: 8px;
 }
 
-.mode-card:hover {
+.module-track-card:hover {
   background: var(--surface-hover);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
 
-.mode-card:active {
-  transform: scale(0.97);
+.module-track-card:active {
+  transform: scale(0.98);
 }
 
-.mode-card-icon {
-  font-size: 1.4rem;
-  margin-bottom: 8px;
+.module-track-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.mode-card-name {
-  font-size: 0.9rem;
+.module-track-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.module-track-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.module-track-name {
+  font-size: 0.92rem;
   font-weight: 800;
   color: #FFFFFF;
 }
 
-.mode-card-desc {
+.module-track-sub {
   font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 2px;
 }
 
-/* Quiz Screen (Ambient Road Overpass / Intersection) */
+.module-track-right {
+  text-align: right;
+}
+
+.module-track-acc {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--brazil-green);
+}
+
+.module-track-remaining {
+  font-size: 0.68rem;
+  color: var(--brazil-yellow);
+  font-weight: 700;
+}
+
+.module-bars-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.module-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.module-bar-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.module-bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.module-bar-fill-done {
+  height: 100%;
+  background: var(--brazil-yellow);
+  border-radius: var(--radius-pill);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.module-bar-fill-acc {
+  height: 100%;
+  background: var(--brazil-green);
+  border-radius: var(--radius-pill);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* Quiz Screen */
 #view-quiz {
   position: relative;
 }
