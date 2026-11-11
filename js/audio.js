@@ -33,7 +33,8 @@
       }
     },
 
-    // 🏎️ Trilha Sonora Instigante & Motivadora: Synthwave / Retrowave Driving Beat (Eletrizante, ritmada e agradável)
+    // 🚗 Trilha Sonora: Deep Urban Drive (Cadenciada, madura, elegante e instigante)
+    // Ritmo cadenciado (~92 BPM), pads aveludados, sub-bass encorpado e kick groove suave
     startBgMusic() {
       if (this.isMusicPlaying) return;
       this.init();
@@ -42,114 +43,151 @@
       this.isMusicPlaying = true;
       const ctx = this.ctx;
 
-      // Master gain: volume audível e presente, mas equilibrado para não incomodar
+      // Master gain: volume nítido, encorpado e confortável
       const masterMusicGain = ctx.createGain();
-      masterMusicGain.gain.setValueAtTime(0.095, ctx.currentTime);
+      masterMusicGain.gain.setValueAtTime(0.085, ctx.currentTime);
       masterMusicGain.connect(ctx.destination);
       this.musicGain = masterMusicGain;
 
-      // Linha de baixo instigante (Bassline Synthwave) em D Menor / F Maior
-      // Notas: D2 (73.42Hz), F2 (87.31Hz), G2 (98.00Hz), A2 (110.00Hz), C3 (130.81Hz), D3 (146.83Hz)
-      const bassSequence = [
-        73.42, 73.42, 146.83, 73.42,   // D2, D2, D3, D2
-        87.31, 87.31, 174.61, 87.31,   // F2, F2, F3, F2
-        98.00, 98.00, 196.00, 98.00,   // G2, G2, G3, G2
-        110.00, 98.00, 87.31, 73.42    // A2, G2, F2, D2 (drive descendente)
+      // Harmonia sofisticada e madura em Dó Menor / Mi Bemol (Cm9 -> Abmaj7 -> Bb6 -> Gm7)
+      const chordBars = [
+        {
+          bass: 65.41, // C2
+          pad: [130.81, 155.56, 196.00, 293.66], // C3, Eb3, G3, D4 (Cm9)
+          accent: 293.66 // D4
+        },
+        {
+          bass: 51.91, // Ab1
+          pad: [130.81, 155.56, 207.65, 261.63], // C3, Eb3, Ab3, C4 (Abmaj7)
+          accent: 261.63 // C4
+        },
+        {
+          bass: 58.27, // Bb1
+          pad: [116.54, 146.83, 174.61, 233.08], // Bb2, D3, F3, Bb3 (Bb6)
+          accent: 233.08 // Bb3
+        },
+        {
+          bass: 48.99, // G1
+          pad: [98.00, 146.83, 174.61, 220.00],  // G2, D3, F3, A3 (Gm7)
+          accent: 196.00 // G3
+        }
       ];
 
-      // Arpeggio melódico vibrante e futurista
-      const leadSequence = [
-        293.66, 349.23, 440.00, 523.25, // D4, F4, A4, C5
-        349.23, 440.00, 523.25, 587.33, // F4, A4, C5, D5
-        392.00, 440.00, 523.25, 659.25, // G4, A4, C5, E5
-        440.00, 523.25, 587.33, 440.00  // A4, C5, D5, A4
-      ];
+      let barIdx = 0;
+      let beatInBar = 0;
+      const beatDuration = 0.65; // ~92 BPM (Cadência estável, foco e imersão)
 
-      let step = 0;
-      const stepDuration = 0.22; // ~136 BPM - Ritmo perfeito de foco e desafio
-
-      const playBeat = () => {
+      const playGroove = () => {
         if (!this.isMusicPlaying) return;
         const now = ctx.currentTime;
-        const bassFreq = bassSequence[step % bassSequence.length];
-        const leadFreq = leadSequence[step % leadSequence.length];
-        step++;
+        const currentBar = chordBars[barIdx % chordBars.length];
 
-        // 1. Synth Bass (Punch instigante)
-        const bassOsc = ctx.createOscillator();
-        const bassGain = ctx.createGain();
-        const bassFilter = ctx.createBiquadFilter();
+        // 1. Warm Analog Pad (A cada início de compasso - beat 0)
+        if (beatInBar === 0) {
+          currentBar.pad.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
 
-        bassOsc.type = 'sawtooth';
-        bassOsc.frequency.setValueAtTime(bassFreq, now);
+            osc.type = 'triangle'; // Macio, não-estridente
+            osc.frequency.setValueAtTime(freq, now);
 
-        bassFilter.type = 'lowpass';
-        bassFilter.frequency.setValueAtTime(380, now);
-        bassFilter.frequency.exponentialRampToValueAtTime(140, now + 0.18);
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(420 + i * 40, now);
 
-        bassGain.gain.setValueAtTime(0.24, now);
-        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
+            // Envelope longo e aveludado
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.exponentialRampToValueAtTime(0.14, now + 0.4);
+            gain.gain.setValueAtTime(0.11, now + 1.8);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
 
-        bassOsc.connect(bassFilter);
-        bassFilter.connect(bassGain);
-        bassGain.connect(masterMusicGain);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterMusicGain);
 
-        bassOsc.start(now);
-        bassOsc.stop(now + 0.22);
-
-        // 2. Chords / Lead Synthwave Arp (Aura moderna de videogame)
-        if (step % 2 === 0) {
-          const leadOsc = ctx.createOscillator();
-          const leadGain = ctx.createGain();
-          const leadFilter = ctx.createBiquadFilter();
-
-          leadOsc.type = 'triangle';
-          leadOsc.frequency.setValueAtTime(leadFreq, now);
-
-          leadFilter.type = 'bandpass';
-          leadFilter.frequency.setValueAtTime(1200, now);
-          leadFilter.Q.setValueAtTime(1.5, now);
-
-          leadGain.gain.setValueAtTime(0.12, now);
-          leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-
-          leadOsc.connect(leadFilter);
-          leadFilter.connect(leadGain);
-          leadGain.connect(masterMusicGain);
-
-          leadOsc.start(now);
-          leadOsc.stop(now + 0.4);
+            osc.start(now);
+            osc.stop(now + 2.55);
+          });
         }
 
-        // 3. Hi-Hat sutil e ritmado a cada contra-tempo
-        if (step % 2 === 1) {
-          const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
-          const output = noiseBuffer.getChannelData(0);
+        // 2. Deep Sub-Bass (Beats 0 e 2 - cadência sólida de direção)
+        if (beatInBar === 0 || beatInBar === 2) {
+          const bassOsc = ctx.createOscillator();
+          const bassGain = ctx.createGain();
+          const bassFilter = ctx.createBiquadFilter();
+
+          bassOsc.type = 'sine'; // Sub-bass puro e encorpado
+          bassOsc.frequency.setValueAtTime(currentBar.bass, now);
+
+          bassFilter.type = 'lowpass';
+          bassFilter.frequency.setValueAtTime(180, now);
+
+          bassGain.gain.setValueAtTime(0.28, now);
+          bassGain.gain.exponentialRampToValueAtTime(0.001, now + (beatInBar === 0 ? 0.9 : 0.5));
+
+          bassOsc.connect(bassFilter);
+          bassFilter.connect(bassGain);
+          bassGain.connect(masterMusicGain);
+
+          bassOsc.start(now);
+          bassOsc.stop(now + 1.0);
+        }
+
+        // 3. Kick / Batida Acústica Suave (Beat 0 e Beat 2.5)
+        if (beatInBar === 0 || beatInBar === 2) {
+          const kickOsc = ctx.createOscillator();
+          const kickGain = ctx.createGain();
+
+          kickOsc.type = 'sine';
+          kickOsc.frequency.setValueAtTime(95, now);
+          kickOsc.frequency.exponentialRampToValueAtTime(35, now + 0.12);
+
+          kickGain.gain.setValueAtTime(0.22, now);
+          kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+          kickOsc.connect(kickGain);
+          kickGain.connect(masterMusicGain);
+
+          kickOsc.start(now);
+          kickOsc.stop(now + 0.16);
+        }
+
+        // 4. Subtle Shaker / Pincelada de ritmo no contratempo
+        if (beatInBar === 1 || beatInBar === 3) {
+          const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
           for (let i = 0; i < noiseBuffer.length; i++) {
-            output[i] = Math.random() * 2 - 1;
+            data[i] = Math.random() * 2 - 1;
           }
-          const whiteNoise = ctx.createBufferSource();
-          whiteNoise.buffer = noiseBuffer;
+          const noise = ctx.createBufferSource();
+          noise.buffer = noiseBuffer;
 
-          const hatFilter = ctx.createBiquadFilter();
-          hatFilter.type = 'highpass';
-          hatFilter.frequency.setValueAtTime(7500, now);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(6000, now);
+          filter.Q.setValueAtTime(2.0, now);
 
-          const hatGain = ctx.createGain();
-          hatGain.gain.setValueAtTime(0.045, now);
-          hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
-          whiteNoise.connect(hatFilter);
-          hatFilter.connect(hatGain);
-          hatGain.connect(masterMusicGain);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(masterMusicGain);
 
-          whiteNoise.start(now);
-          whiteNoise.stop(now + 0.05);
+          noise.start(now);
+          noise.stop(now + 0.06);
+        }
+
+        // Avança o compasso (4 tempos por compasso)
+        beatInBar = (beatInBar + 1) % 4;
+        if (beatInBar === 0) {
+          barIdx++;
         }
       };
 
-      playBeat();
-      this.musicInterval = setInterval(playBeat, stepDuration * 1000);
+      playGroove();
+      this.musicInterval = setInterval(playGroove, beatDuration * 1000);
     },
 
     stopBgMusic() {
@@ -159,7 +197,7 @@
         this.musicInterval = null;
       }
       if (this.musicGain && this.ctx) {
-        this.musicGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.3);
+        this.musicGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.4);
       }
     },
 
