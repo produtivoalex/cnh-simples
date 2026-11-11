@@ -544,35 +544,6 @@ body {
   transition: width 0.3s ease;
 }
 
-/* Botão de Música na Top Nav */
-.music-pill {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #A7F3D0;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.music-pill:hover {
-  background: rgba(16, 185, 129, 0.22);
-  border-color: var(--brazil-green);
-  color: #FFF;
-}
-
-.music-pill.playing {
-  background: rgba(16, 185, 129, 0.28);
-  border-color: var(--brazil-green);
-  box-shadow: 0 0 12px var(--brazil-green-glow);
-  color: #FFFFFF;
-}
-
 /* Quiz Screen: Fundo Ultra Evidente & Cards de Alta Transparência */
 #view-quiz {
   position: relative;

@@ -765,27 +765,6 @@
     }
   }
 
-  // Background Ambient Music Toggle
-  function toggleBgMusic() {
-    if (!window.trafficAudio) return;
-    const isPlaying = window.trafficAudio.toggleBgMusic();
-    const btn = document.getElementById('btn-toggle-music');
-    const label = document.getElementById('music-label');
-    const icon = document.getElementById('music-icon');
-
-    if (btn) {
-      if (isPlaying) {
-        btn.classList.add('playing');
-        if (label) label.textContent = 'Música On';
-        if (icon) icon.textContent = '🔊';
-      } else {
-        btn.classList.remove('playing');
-        if (label) label.textContent = 'Música';
-        if (icon) icon.textContent = '🎵';
-      }
-    }
-  }
-
   // Cross-device sync actions: Instant Cloud Sync via Driver ID (e.g. CNH-6L7Y)
   async function saveProgressToCloud() {
     if (!window.cnhSync) return;
@@ -884,7 +863,6 @@
     nextQuestion,
     renderPlacasCatalog,
     toggleOnlyUnmastered,
-    toggleBgMusic,
     saveProgressToCloud,
     loadProgressFromCloud,
     copySyncPayload,
