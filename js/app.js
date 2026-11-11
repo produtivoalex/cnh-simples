@@ -128,86 +128,71 @@
     const totalAnswered = state.userStats.totalAnswered || 0;
     const answeredFromDiff = Object.keys(state.userDifficulty || {}).map(k => parseInt(k, 10));
 
-    // Se o usuário tem acertos ou questões respondidas, mas a contagem de mastered está menor:
+    // Se o usuário tem acertos ou questões praticadas
     const qById = {};
     state.questions.forEach(q => { qById[q.id] = q; });
 
-    // 1. As questões que estão no mapa de dificuldade com 0 falhas foram acertadas
-    const recoveredSet = new Set(state.masteredQuestionIds || []);
+    let recoveredSet = new Set(state.masteredQuestionIds || []);
     answeredFromDiff.forEach(qid => {
       if ((state.userDifficulty[qid] || 0) === 0) {
         recoveredSet.add(qid);
       }
     });
 
-    // 2. Se o totalCorrect for maior que o conjunto recuperado, distribui os acertos restantes
-    // proporcionalmente entre as 4 categorias oficiais com base nas questões prioritárias/iniciais
-    let needed = Math.max(0, totalCorrect - recoveredSet.size);
-    if (needed > 0) {
-      // Distribui igualmente entre os 4 módulos para refletir os treinos gerais que o usuário fez
+    // Se as questões salvas no mastered forem todas de uma única categoria (ex: 1..42 só sinalização),
+    // mas o usuário já treinou no geral (XP alto, totalAnswered > 40), redistribuímos os acertos
+    // proporcionalmente entre as 4 áreas para que NENHUM módulo fique injustamente em 100% restante!
+    const allAreSinalizacao = recoveredSet.size > 0 && Array.from(recoveredSet).every(id => qById[id] && qById[id].category === 'sinalizacao');
+    const effectiveCorrectCount = Math.max(totalCorrect, recoveredSet.size, 42);
+
+    if (allAreSinalizacao || recoveredSet.size < effectiveCorrectCount) {
       const categories = ['sinalizacao', 'infracoes', 'defensiva', 'socorros_mecanica_meioambiente'];
-      let catIdx = 0;
-      let attemptsLoop = 0;
+      
+      // Divide os acertos totais entre as 4 categorias oficiais
+      const perCategory = Math.max(8, Math.floor(effectiveCorrectCount / categories.length));
+      const newMastered = new Set(recoveredSet);
 
-      while (needed > 0 && attemptsLoop < state.questions.length) {
-        const targetCat = categories[catIdx % categories.length];
-        const matchQ = state.questions.find(q => q.category === targetCat && !recoveredSet.has(q.id) && (!state.userDifficulty[q.id] || state.userDifficulty[q.id] === 0));
-        
-        if (matchQ) {
-          recoveredSet.add(matchQ.id);
-          needed--;
-        }
-        catIdx++;
-        attemptsLoop++;
-      }
-
-      // Se ainda restou algum acerto a preencher
-      if (needed > 0) {
-        for (let i = 0; i < state.questions.length && needed > 0; i++) {
-          const qid = state.questions[i].id;
-          if (!recoveredSet.has(qid)) {
-            recoveredSet.add(qid);
-            needed--;
+      categories.forEach(cat => {
+        let added = 0;
+        const catQs = state.questions.filter(q => q.category === cat);
+        for (const q of catQs) {
+          if (added >= perCategory) break;
+          if (!newMastered.has(q.id)) {
+            newMastered.add(q.id);
+            added++;
           }
         }
-      }
+      });
+
+      recoveredSet = newMastered;
     }
 
     state.masteredQuestionIds = Array.from(recoveredSet);
 
-    // Recompõe também a distribuição proporcional nos categoryStats
-    const hasCategoryData = state.userStats.categoryStats && (
-      state.userStats.categoryStats.sinalizacao.totalAttempts > 0 ||
-      state.userStats.categoryStats.infracoes.totalAttempts > 0 ||
-      state.userStats.categoryStats.defensiva.totalAttempts > 0 ||
-      state.userStats.categoryStats.socorros_mecanica_meioambiente.totalAttempts > 0
-    );
+    // Reconstrói categoryStats consistente para todos os 4 módulos
+    state.userStats.categoryStats = {
+      sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+      infracoes: { totalAttempts: 0, correctAttempts: 0 },
+      defensiva: { totalAttempts: 0, correctAttempts: 0 },
+      socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+    };
 
-    if (!hasCategoryData && state.masteredQuestionIds.length > 0) {
-      state.userStats.categoryStats = {
-        sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
-        infracoes: { totalAttempts: 0, correctAttempts: 0 },
-        defensiva: { totalAttempts: 0, correctAttempts: 0 },
-        socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
-      };
+    state.masteredQuestionIds.forEach(qid => {
+      const q = qById[qid];
+      if (q && state.userStats.categoryStats[q.category]) {
+        state.userStats.categoryStats[q.category].correctAttempts++;
+        state.userStats.categoryStats[q.category].totalAttempts++;
+      }
+    });
 
-      state.masteredQuestionIds.forEach(qid => {
-        const q = qById[qid];
-        if (q && state.userStats.categoryStats[q.category]) {
-          state.userStats.categoryStats[q.category].correctAttempts++;
-          state.userStats.categoryStats[q.category].totalAttempts++;
-        }
-      });
-
-      // Adiciona os erros registrados nas categorias corretas
-      Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
-        const qid = parseInt(qidStr, 10);
-        const q = qById[qid];
-        if (q && fails > 0 && state.userStats.categoryStats[q.category]) {
-          state.userStats.categoryStats[q.category].totalAttempts += fails;
-        }
-      });
-    }
+    // Adiciona os erros registrados nas categorias corretas
+    Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
+      const qid = parseInt(qidStr, 10);
+      const q = qById[qid];
+      if (q && fails > 0 && state.userStats.categoryStats[q.category]) {
+        state.userStats.categoryStats[q.category].totalAttempts += fails;
+      }
+    });
 
     savePersisted();
   }
@@ -656,7 +641,14 @@
       sess.queue.push(cloned);
     }
 
+    // Auto-save on every single answered question
     savePersisted();
+
+    // Auto-sync na nuvem a cada 5 questões respondidas em segundo plano (sem travar a tela)
+    if (state.userStats.totalAnswered % 5 === 0 && window.cnhSync) {
+      window.cnhSync.pushToCloud().catch(() => {});
+    }
+
     showFeedback(isCorrect, q, !isCorrect);
   }
 
