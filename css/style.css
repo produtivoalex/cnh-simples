@@ -544,7 +544,36 @@ body {
   transition: width 0.3s ease;
 }
 
-/* Quiz Screen */
+/* Botão de Música na Top Nav */
+.music-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #A7F3D0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.music-pill:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: var(--brazil-green);
+  color: #FFF;
+}
+
+.music-pill.playing {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: var(--brazil-green);
+  box-shadow: 0 0 12px var(--brazil-green-glow);
+  color: #FFFFFF;
+}
+
+/* Quiz Screen: Fundo Ultra Evidente & Cards de Alta Transparência */
 #view-quiz {
   position: relative;
 }
@@ -559,7 +588,7 @@ body {
   background: url('../assets/illustrations/bg-intersection.svg') center center / cover no-repeat;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.85; /* Fundo bem evidente e imersivo */
+  opacity: 0.95; /* Fundo 95% evidente, ultra nítido e presente */
 }
 
 .quiz-top, .q-box, .answers-stack, .feedback-box {
@@ -575,9 +604,10 @@ body {
 }
 
 .btn-close-quiz {
-  background: rgba(14, 22, 38, 0.72);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(16, 185, 129, 0.25); /* Verde fino e discreto */
+  background: rgba(14, 22, 38, 0.45); /* Alta transparência */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.35); /* Verde fino e discreto */
   color: var(--text-muted);
   width: 36px;
   height: 36px;
@@ -598,11 +628,11 @@ body {
 .bar-container {
   flex: 1;
   height: 8px;
-  background: rgba(14, 22, 38, 0.65);
+  background: rgba(14, 22, 38, 0.45);
   border-radius: var(--radius-pill);
   margin: 0 10px;
   overflow: hidden;
-  border: 1px solid rgba(16, 185, 129, 0.2); /* Verde fino e discreto */
+  border: 1px solid rgba(16, 185, 129, 0.25); /* Verde fino e discreto */
 }
 
 .bar-fill {
@@ -618,8 +648,8 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(14, 22, 38, 0.5);
+  border: 1px solid rgba(245, 158, 11, 0.35);
   padding: 4px 9px;
   border-radius: var(--radius-pill);
   font-size: 0.78rem;
@@ -633,17 +663,17 @@ body {
   color: var(--text-muted);
 }
 
-/* Question Box: Mais translúcida para exibir o fundo e contorno verde sutil */
+/* Question Box: Alta Transparência para revelar totalmente o tráfego ao fundo */
 .q-box {
-  background: rgba(14, 22, 38, 0.76); /* Mais transparente para destacar a ilustração */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(16, 185, 129, 0.28); /* Borda verde fina e discreta */
+  background: rgba(10, 16, 28, 0.48); /* Super transparente (48% opacidade) */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.3); /* Borda verde fina e discreta */
   border-top: 2px solid var(--brazil-green); /* Destaque verde elegante no topo */
   border-radius: var(--radius-lg);
   padding: 20px 18px;
   margin-bottom: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .q-badges {
@@ -660,37 +690,37 @@ body {
 }
 
 .badge-trap {
-  background: rgba(239, 68, 68, 0.15);
-  color: #F87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.2);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .badge-freq {
-  background: rgba(245, 158, 11, 0.15);
-  color: #FBBF24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.2);
+  color: #FCD34D;
+  border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
 .badge-module {
-  background: rgba(16, 185, 129, 0.1);
-  color: #34D399;
-  border: 1px solid rgba(16, 185, 129, 0.25); /* Verde fino na tag */
+  background: rgba(16, 185, 129, 0.15);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.35); /* Verde fino na tag */
 }
 
 .q-plate-wrapper {
   text-align: center;
   margin-bottom: 14px;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.25);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .q-plate-img {
   max-width: 110px;
   max-height: 110px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.6));
 }
 
 .q-text {
@@ -698,9 +728,10 @@ body {
   font-weight: 700;
   line-height: 1.48;
   color: #FFFFFF;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
-/* Alternatives Options: Mais transparente para revelar o tráfego ao fundo */
+/* Alternatives Options: Translúcido moderno (45% opacidade) */
 .answers-stack {
   display: flex;
   flex-direction: column;
@@ -709,10 +740,10 @@ body {
 }
 
 .answer-card {
-  background: rgba(14, 22, 38, 0.74); /* Translúcido com efeito vidro */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(16, 185, 129, 0.18); /* Verde fino e discreto padrão */
+  background: rgba(10, 16, 28, 0.46); /* Alta transparência */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(16, 185, 129, 0.22); /* Verde fino e discreto padrão */
   border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
@@ -721,14 +752,15 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
-  color: var(--text);
+  color: #FFFFFF;
   font-size: 0.94rem;
   line-height: 1.4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .answer-card:hover:not(:disabled) {
-  background: rgba(21, 34, 56, 0.85);
-  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 26, 44, 0.65);
+  border-color: rgba(16, 185, 129, 0.5);
 }
 
 .answer-card:active:not(:disabled) {
@@ -739,8 +771,8 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.12); /* Verde fino no marcador da letra */
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.18); /* Verde fino no marcador da letra */
+  border: 1px solid rgba(16, 185, 129, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -752,7 +784,7 @@ body {
 }
 
 .answer-card.correct {
-  background: rgba(16, 185, 129, 0.25) !important;
+  background: rgba(16, 185, 129, 0.38) !important;
   border-color: var(--brazil-green) !important;
   box-shadow: 0 0 20px var(--brazil-green-glow);
 }
@@ -764,7 +796,7 @@ body {
 }
 
 .answer-card.wrong {
-  background: rgba(239, 68, 68, 0.22) !important;
+  background: rgba(239, 68, 68, 0.32) !important;
   border-color: var(--danger) !important;
   box-shadow: 0 0 20px var(--danger-glow);
   animation: shake 0.35s ease;
@@ -773,6 +805,8 @@ body {
 .answer-card.wrong .ans-letter {
   background: var(--danger) !important;
   color: #FFFFFF !important;
+  border-color: var(--danger) !important;
+}
   border-color: var(--danger) !important;
 }
 

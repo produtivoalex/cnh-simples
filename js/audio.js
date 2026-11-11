@@ -5,6 +5,9 @@
 
   const trafficAudio = {
     ctx: null,
+    isMusicPlaying: false,
+    musicInterval: null,
+    musicGain: null,
 
     init() {
       if (!this.ctx) {
@@ -13,6 +16,92 @@
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
+      }
+    },
+
+    // 🎵 Música de Fundo: Lo-Fi Chords relaxantes de direção noturna (suave, calma e baixinha)
+    toggleBgMusic() {
+      this.init();
+      if (!this.ctx) return false;
+
+      if (this.isMusicPlaying) {
+        this.stopBgMusic();
+        return false;
+      } else {
+        this.startBgMusic();
+        return true;
+      }
+    },
+
+    startBgMusic() {
+      if (this.isMusicPlaying) return;
+      this.init();
+      if (!this.ctx) return;
+
+      this.isMusicPlaying = true;
+      const ctx = this.ctx;
+
+      // Master gain for music: bem baixinha (-24dB aprox) para relaxar sem atrapalhar o raciocínio
+      const masterMusicGain = ctx.createGain();
+      masterMusicGain.gain.setValueAtTime(0.035, ctx.currentTime);
+      masterMusicGain.connect(ctx.destination);
+      this.musicGain = masterMusicGain;
+
+      // Progressão harmônica relaxante (Fmaj7 -> Gsus4 -> Em7 -> Am7)
+      const chordProgression = [
+        [174.61, 220.00, 261.63, 329.63], // F, A, C, E (Fmaj7)
+        [196.00, 246.94, 293.66, 392.00], // G, B, D, G (G)
+        [164.81, 196.00, 246.94, 329.63], // E, G, B, E (Em7)
+        [220.00, 261.63, 329.63, 440.00]  // A, C, E, A (Am7)
+      ];
+
+      let chordIdx = 0;
+
+      const playChord = () => {
+        if (!this.isMusicPlaying) return;
+        const now = ctx.currentTime;
+        const chord = chordProgression[chordIdx % chordProgression.length];
+        chordIdx++;
+
+        chord.forEach((freq, noteIdx) => {
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+
+          osc.type = 'sine'; // Som aveludado e macio
+          osc.frequency.setValueAtTime(freq, now + noteIdx * 0.08); // Leve arpeggio natural
+
+          // Filtro quente para tirar agudos estidentes
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(480, now);
+
+          // Fade in lento e fade out longo
+          noteGain.gain.setValueAtTime(0.001, now);
+          noteGain.gain.exponentialRampToValueAtTime(0.3, now + 0.6);
+          noteGain.gain.exponentialRampToValueAtTime(0.001, now + 3.4);
+
+          osc.connect(filter);
+          filter.connect(noteGain);
+          noteGain.connect(masterMusicGain);
+
+          osc.start(now);
+          osc.stop(now + 3.5);
+        });
+      };
+
+      // Toca o primeiro acorde e agenda os seguintes a cada 3.6 segundos
+      playChord();
+      this.musicInterval = setInterval(playChord, 3600);
+    },
+
+    stopBgMusic() {
+      this.isMusicPlaying = false;
+      if (this.musicInterval) {
+        clearInterval(this.musicInterval);
+        this.musicInterval = null;
+      }
+      if (this.musicGain && this.ctx) {
+        this.musicGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
       }
     },
 

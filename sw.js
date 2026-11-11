@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cnh-simples-v12';
+const CACHE_NAME = 'cnh-simples-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

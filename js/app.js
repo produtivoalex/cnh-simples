@@ -328,6 +328,19 @@
 
     const masteredSet = new Set(state.masteredQuestionIds || []);
 
+    // REGRA DE OURO DAS VARIANTES:
+    // Questões que se repetem com pequenas variações de palavras só devem aparecer
+    // QUANDO o aluno já tiver respondido/dominado todas as questões inéditas principais!
+    const unmasteredPrimaries = pool.filter(q => !q.is_variant && (!masteredSet.has(q.id) || (state.userDifficulty[q.id] || 0) > 0));
+
+    // Se ainda restam questões primárias não dominadas, bloqueia as variantes secundárias
+    if (unmasteredPrimaries.length >= size) {
+      pool = pool.filter(q => !q.is_variant);
+    } else if (unmasteredPrimaries.length > 0) {
+      // Se restam poucas primárias, dá prioridade total a elas antes de liberar as variantes
+      pool = pool.filter(q => !q.is_variant || masteredSet.has(q.id));
+    }
+
     // Filter or deprioritize already mastered questions if user opted to skip them
     let candidatePool = pool;
     if (state.onlyUnmastered) {
@@ -743,6 +756,27 @@
     }
   }
 
+  // Background Ambient Music Toggle
+  function toggleBgMusic() {
+    if (!window.trafficAudio) return;
+    const isPlaying = window.trafficAudio.toggleBgMusic();
+    const btn = document.getElementById('btn-toggle-music');
+    const label = document.getElementById('music-label');
+    const icon = document.getElementById('music-icon');
+
+    if (btn) {
+      if (isPlaying) {
+        btn.classList.add('playing');
+        if (label) label.textContent = 'Música On';
+        if (icon) icon.textContent = '🔊';
+      } else {
+        btn.classList.remove('playing');
+        if (label) label.textContent = 'Música';
+        if (icon) icon.textContent = '🎵';
+      }
+    }
+  }
+
   // Cross-device sync actions: Instant Cloud Sync via Driver ID (e.g. CNH-6L7Y)
   async function saveProgressToCloud() {
     if (!window.cnhSync) return;
@@ -832,6 +866,7 @@
     nextQuestion,
     renderPlacasCatalog,
     toggleOnlyUnmastered,
+    toggleBgMusic,
     saveProgressToCloud,
     loadProgressFromCloud,
     copySyncPayload,
