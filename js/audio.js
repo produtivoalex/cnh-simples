@@ -33,6 +33,7 @@
       }
     },
 
+    // 🏎️ Trilha Sonora Instigante & Motivadora: Synthwave / Retrowave Driving Beat (Eletrizante, ritmada e agradável)
     startBgMusic() {
       if (this.isMusicPlaying) return;
       this.init();
@@ -41,57 +42,114 @@
       this.isMusicPlaying = true;
       const ctx = this.ctx;
 
-      // Master gain for music: bem baixinha (-24dB aprox) para relaxar sem atrapalhar o raciocínio
+      // Master gain: volume audível e presente, mas equilibrado para não incomodar
       const masterMusicGain = ctx.createGain();
-      masterMusicGain.gain.setValueAtTime(0.035, ctx.currentTime);
+      masterMusicGain.gain.setValueAtTime(0.095, ctx.currentTime);
       masterMusicGain.connect(ctx.destination);
       this.musicGain = masterMusicGain;
 
-      // Progressão harmônica relaxante (Fmaj7 -> Gsus4 -> Em7 -> Am7)
-      const chordProgression = [
-        [174.61, 220.00, 261.63, 329.63], // F, A, C, E (Fmaj7)
-        [196.00, 246.94, 293.66, 392.00], // G, B, D, G (G)
-        [164.81, 196.00, 246.94, 329.63], // E, G, B, E (Em7)
-        [220.00, 261.63, 329.63, 440.00]  // A, C, E, A (Am7)
+      // Linha de baixo instigante (Bassline Synthwave) em D Menor / F Maior
+      // Notas: D2 (73.42Hz), F2 (87.31Hz), G2 (98.00Hz), A2 (110.00Hz), C3 (130.81Hz), D3 (146.83Hz)
+      const bassSequence = [
+        73.42, 73.42, 146.83, 73.42,   // D2, D2, D3, D2
+        87.31, 87.31, 174.61, 87.31,   // F2, F2, F3, F2
+        98.00, 98.00, 196.00, 98.00,   // G2, G2, G3, G2
+        110.00, 98.00, 87.31, 73.42    // A2, G2, F2, D2 (drive descendente)
       ];
 
-      let chordIdx = 0;
+      // Arpeggio melódico vibrante e futurista
+      const leadSequence = [
+        293.66, 349.23, 440.00, 523.25, // D4, F4, A4, C5
+        349.23, 440.00, 523.25, 587.33, // F4, A4, C5, D5
+        392.00, 440.00, 523.25, 659.25, // G4, A4, C5, E5
+        440.00, 523.25, 587.33, 440.00  // A4, C5, D5, A4
+      ];
 
-      const playChord = () => {
+      let step = 0;
+      const stepDuration = 0.22; // ~136 BPM - Ritmo perfeito de foco e desafio
+
+      const playBeat = () => {
         if (!this.isMusicPlaying) return;
         const now = ctx.currentTime;
-        const chord = chordProgression[chordIdx % chordProgression.length];
-        chordIdx++;
+        const bassFreq = bassSequence[step % bassSequence.length];
+        const leadFreq = leadSequence[step % leadSequence.length];
+        step++;
 
-        chord.forEach((freq, noteIdx) => {
-          const osc = ctx.createOscillator();
-          const noteGain = ctx.createGain();
-          const filter = ctx.createBiquadFilter();
+        // 1. Synth Bass (Punch instigante)
+        const bassOsc = ctx.createOscillator();
+        const bassGain = ctx.createGain();
+        const bassFilter = ctx.createBiquadFilter();
 
-          osc.type = 'sine'; // Som aveludado e macio
-          osc.frequency.setValueAtTime(freq, now + noteIdx * 0.08); // Leve arpeggio natural
+        bassOsc.type = 'sawtooth';
+        bassOsc.frequency.setValueAtTime(bassFreq, now);
 
-          // Filtro quente para tirar agudos estidentes
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(480, now);
+        bassFilter.type = 'lowpass';
+        bassFilter.frequency.setValueAtTime(380, now);
+        bassFilter.frequency.exponentialRampToValueAtTime(140, now + 0.18);
 
-          // Fade in lento e fade out longo
-          noteGain.gain.setValueAtTime(0.001, now);
-          noteGain.gain.exponentialRampToValueAtTime(0.3, now + 0.6);
-          noteGain.gain.exponentialRampToValueAtTime(0.001, now + 3.4);
+        bassGain.gain.setValueAtTime(0.24, now);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
 
-          osc.connect(filter);
-          filter.connect(noteGain);
-          noteGain.connect(masterMusicGain);
+        bassOsc.connect(bassFilter);
+        bassFilter.connect(bassGain);
+        bassGain.connect(masterMusicGain);
 
-          osc.start(now);
-          osc.stop(now + 3.5);
-        });
+        bassOsc.start(now);
+        bassOsc.stop(now + 0.22);
+
+        // 2. Chords / Lead Synthwave Arp (Aura moderna de videogame)
+        if (step % 2 === 0) {
+          const leadOsc = ctx.createOscillator();
+          const leadGain = ctx.createGain();
+          const leadFilter = ctx.createBiquadFilter();
+
+          leadOsc.type = 'triangle';
+          leadOsc.frequency.setValueAtTime(leadFreq, now);
+
+          leadFilter.type = 'bandpass';
+          leadFilter.frequency.setValueAtTime(1200, now);
+          leadFilter.Q.setValueAtTime(1.5, now);
+
+          leadGain.gain.setValueAtTime(0.12, now);
+          leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+          leadOsc.connect(leadFilter);
+          leadFilter.connect(leadGain);
+          leadGain.connect(masterMusicGain);
+
+          leadOsc.start(now);
+          leadOsc.stop(now + 0.4);
+        }
+
+        // 3. Hi-Hat sutil e ritmado a cada contra-tempo
+        if (step % 2 === 1) {
+          const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < noiseBuffer.length; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+          const whiteNoise = ctx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+
+          const hatFilter = ctx.createBiquadFilter();
+          hatFilter.type = 'highpass';
+          hatFilter.frequency.setValueAtTime(7500, now);
+
+          const hatGain = ctx.createGain();
+          hatGain.gain.setValueAtTime(0.045, now);
+          hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+          whiteNoise.connect(hatFilter);
+          hatFilter.connect(hatGain);
+          hatGain.connect(masterMusicGain);
+
+          whiteNoise.start(now);
+          whiteNoise.stop(now + 0.05);
+        }
       };
 
-      // Toca o primeiro acorde e agenda os seguintes a cada 3.6 segundos
-      playChord();
-      this.musicInterval = setInterval(playChord, 3600);
+      playBeat();
+      this.musicInterval = setInterval(playBeat, stepDuration * 1000);
     },
 
     stopBgMusic() {
@@ -101,7 +159,7 @@
         this.musicInterval = null;
       }
       if (this.musicGain && this.ctx) {
-        this.musicGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
+        this.musicGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.3);
       }
     },
 
