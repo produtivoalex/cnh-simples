@@ -559,7 +559,7 @@ body {
   background: url('../assets/illustrations/bg-intersection.svg') center center / cover no-repeat;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.55;
+  opacity: 0.85; /* Fundo bem evidente e imersivo */
 }
 
 .quiz-top, .q-box, .answers-stack, .feedback-box {
@@ -575,9 +575,9 @@ body {
 }
 
 .btn-close-quiz {
-  background: rgba(14, 22, 38, 0.88);
+  background: rgba(14, 22, 38, 0.72);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--surface-border);
+  border: 1px solid rgba(16, 185, 129, 0.25); /* Verde fino e discreto */
   color: var(--text-muted);
   width: 36px;
   height: 36px;
@@ -587,16 +587,22 @@ body {
   justify-content: center;
   cursor: pointer;
   font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-close-quiz:hover {
+  border-color: var(--brazil-green);
+  color: #FFF;
 }
 
 .bar-container {
   flex: 1;
   height: 8px;
-  background: rgba(14, 22, 38, 0.8);
+  background: rgba(14, 22, 38, 0.65);
   border-radius: var(--radius-pill);
   margin: 0 10px;
   overflow: hidden;
-  border: 1px solid var(--surface-border-subtle);
+  border: 1px solid rgba(16, 185, 129, 0.2); /* Verde fino e discreto */
 }
 
 .bar-fill {
@@ -612,7 +618,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.3);
   padding: 4px 9px;
   border-radius: var(--radius-pill);
@@ -627,12 +633,13 @@ body {
   color: var(--text-muted);
 }
 
-/* Question Box */
+/* Question Box: Mais translúcida para exibir o fundo e contorno verde sutil */
 .q-box {
-  background: rgba(14, 22, 38, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--surface-border);
+  background: rgba(14, 22, 38, 0.76); /* Mais transparente para destacar a ilustração */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.28); /* Borda verde fina e discreta */
+  border-top: 2px solid var(--brazil-green); /* Destaque verde elegante no topo */
   border-radius: var(--radius-lg);
   padding: 20px 18px;
   margin-bottom: 16px;
@@ -665,16 +672,18 @@ body {
 }
 
 .badge-module {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
+  background: rgba(16, 185, 129, 0.1);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.25); /* Verde fino na tag */
 }
 
 .q-plate-wrapper {
   text-align: center;
   margin-bottom: 14px;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .q-plate-img {
@@ -691,7 +700,7 @@ body {
   color: #FFFFFF;
 }
 
-/* Alternatives Options */
+/* Alternatives Options: Mais transparente para revelar o tráfego ao fundo */
 .answers-stack {
   display: flex;
   flex-direction: column;
@@ -700,10 +709,10 @@ body {
 }
 
 .answer-card {
-  background: rgba(14, 22, 38, 0.9);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid var(--surface-border);
+  background: rgba(14, 22, 38, 0.74); /* Translúcido com efeito vidro */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(16, 185, 129, 0.18); /* Verde fino e discreto padrão */
   border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
@@ -718,8 +727,8 @@ body {
 }
 
 .answer-card:hover:not(:disabled) {
-  background: var(--surface-hover);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(21, 34, 56, 0.85);
+  border-color: rgba(16, 185, 129, 0.45);
 }
 
 .answer-card:active:not(:disabled) {
@@ -730,38 +739,41 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(16, 185, 129, 0.12); /* Verde fino no marcador da letra */
+  border: 1px solid rgba(16, 185, 129, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.78rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: #A7F3D0;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
 .answer-card.correct {
-  background: rgba(16, 185, 129, 0.2) !important;
+  background: rgba(16, 185, 129, 0.25) !important;
   border-color: var(--brazil-green) !important;
   box-shadow: 0 0 20px var(--brazil-green-glow);
 }
 
 .answer-card.correct .ans-letter {
-  background: var(--brazil-green);
-  color: #070B12;
+  background: var(--brazil-green) !important;
+  color: #070B12 !important;
+  border-color: var(--brazil-green) !important;
 }
 
 .answer-card.wrong {
-  background: rgba(239, 68, 68, 0.18) !important;
+  background: rgba(239, 68, 68, 0.22) !important;
   border-color: var(--danger) !important;
   box-shadow: 0 0 20px var(--danger-glow);
   animation: shake 0.35s ease;
 }
 
 .answer-card.wrong .ans-letter {
-  background: var(--danger);
-  color: #FFFFFF;
+  background: var(--danger) !important;
+  color: #FFFFFF !important;
+  border-color: var(--danger) !important;
 }
 
 @keyframes shake {

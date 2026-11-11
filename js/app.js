@@ -128,68 +128,88 @@
     const totalAnswered = state.userStats.totalAnswered || 0;
     const answeredFromDiff = Object.keys(state.userDifficulty || {}).map(k => parseInt(k, 10));
 
-    // Se a lista de mastered estiver vazia mas houver acertos ou questões praticadas:
-    if (state.masteredQuestionIds.length === 0 && (totalCorrect > 0 || totalAnswered > 0 || answeredFromDiff.length > 0)) {
-      const qById = {};
-      state.questions.forEach(q => { qById[q.id] = q; });
+    // Se o usuário tem acertos ou questões respondidas, mas a contagem de mastered está menor:
+    const qById = {};
+    state.questions.forEach(q => { qById[q.id] = q; });
 
-      // 1. As questões que estão com falha zerada (resolvidas/aprendidas) são consideradas acertadas
-      const recoveredSet = new Set();
-      answeredFromDiff.forEach(qid => {
-        if ((state.userDifficulty[qid] || 0) === 0) {
-          recoveredSet.add(qid);
+    // 1. As questões que estão no mapa de dificuldade com 0 falhas foram acertadas
+    const recoveredSet = new Set(state.masteredQuestionIds || []);
+    answeredFromDiff.forEach(qid => {
+      if ((state.userDifficulty[qid] || 0) === 0) {
+        recoveredSet.add(qid);
+      }
+    });
+
+    // 2. Se o totalCorrect for maior que o conjunto recuperado, distribui os acertos restantes
+    // proporcionalmente entre as 4 categorias oficiais com base nas questões prioritárias/iniciais
+    let needed = Math.max(0, totalCorrect - recoveredSet.size);
+    if (needed > 0) {
+      // Distribui igualmente entre os 4 módulos para refletir os treinos gerais que o usuário fez
+      const categories = ['sinalizacao', 'infracoes', 'defensiva', 'socorros_mecanica_meioambiente'];
+      let catIdx = 0;
+      let attemptsLoop = 0;
+
+      while (needed > 0 && attemptsLoop < state.questions.length) {
+        const targetCat = categories[catIdx % categories.length];
+        const matchQ = state.questions.find(q => q.category === targetCat && !recoveredSet.has(q.id) && (!state.userDifficulty[q.id] || state.userDifficulty[q.id] === 0));
+        
+        if (matchQ) {
+          recoveredSet.add(matchQ.id);
+          needed--;
         }
-      });
+        catIdx++;
+        attemptsLoop++;
+      }
 
-      // 2. Se o totalCorrect for maior que o número recuperado acima, pegamos as primeiras questões
-      // que o app costumava servir nos treinos para preencher os acertos que o usuário realizou
-      let needed = Math.max(0, totalCorrect - recoveredSet.size);
+      // Se ainda restou algum acerto a preencher
       if (needed > 0) {
         for (let i = 0; i < state.questions.length && needed > 0; i++) {
           const qid = state.questions[i].id;
-          if (!recoveredSet.has(qid) && (!state.userDifficulty[qid] || state.userDifficulty[qid] === 0)) {
+          if (!recoveredSet.has(qid)) {
             recoveredSet.add(qid);
             needed--;
           }
         }
       }
-
-      state.masteredQuestionIds = Array.from(recoveredSet);
-
-      // Recompõe também a distribuição proporcional nos categoryStats
-      if (!state.userStats.categoryStats || 
-          (state.userStats.categoryStats.sinalizacao.totalAttempts === 0 &&
-           state.userStats.categoryStats.infracoes.totalAttempts === 0 &&
-           state.userStats.categoryStats.defensiva.totalAttempts === 0 &&
-           state.userStats.categoryStats.socorros_mecanica_meioambiente.totalAttempts === 0)) {
-        
-        state.userStats.categoryStats = {
-          sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
-          infracoes: { totalAttempts: 0, correctAttempts: 0 },
-          defensiva: { totalAttempts: 0, correctAttempts: 0 },
-          socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
-        };
-
-        state.masteredQuestionIds.forEach(qid => {
-          const q = qById[qid];
-          if (q && state.userStats.categoryStats[q.category]) {
-            state.userStats.categoryStats[q.category].correctAttempts++;
-            state.userStats.categoryStats[q.category].totalAttempts++;
-          }
-        });
-
-        // Adiciona os erros registrados nas categorias corretas
-        Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
-          const qid = parseInt(qidStr, 10);
-          const q = qById[qid];
-          if (q && fails > 0 && state.userStats.categoryStats[q.category]) {
-            state.userStats.categoryStats[q.category].totalAttempts += fails;
-          }
-        });
-      }
-
-      savePersisted();
     }
+
+    state.masteredQuestionIds = Array.from(recoveredSet);
+
+    // Recompõe também a distribuição proporcional nos categoryStats
+    const hasCategoryData = state.userStats.categoryStats && (
+      state.userStats.categoryStats.sinalizacao.totalAttempts > 0 ||
+      state.userStats.categoryStats.infracoes.totalAttempts > 0 ||
+      state.userStats.categoryStats.defensiva.totalAttempts > 0 ||
+      state.userStats.categoryStats.socorros_mecanica_meioambiente.totalAttempts > 0
+    );
+
+    if (!hasCategoryData && state.masteredQuestionIds.length > 0) {
+      state.userStats.categoryStats = {
+        sinalizacao: { totalAttempts: 0, correctAttempts: 0 },
+        infracoes: { totalAttempts: 0, correctAttempts: 0 },
+        defensiva: { totalAttempts: 0, correctAttempts: 0 },
+        socorros_mecanica_meioambiente: { totalAttempts: 0, correctAttempts: 0 }
+      };
+
+      state.masteredQuestionIds.forEach(qid => {
+        const q = qById[qid];
+        if (q && state.userStats.categoryStats[q.category]) {
+          state.userStats.categoryStats[q.category].correctAttempts++;
+          state.userStats.categoryStats[q.category].totalAttempts++;
+        }
+      });
+
+      // Adiciona os erros registrados nas categorias corretas
+      Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
+        const qid = parseInt(qidStr, 10);
+        const q = qById[qid];
+        if (q && fails > 0 && state.userStats.categoryStats[q.category]) {
+          state.userStats.categoryStats[q.category].totalAttempts += fails;
+        }
+      });
+    }
+
+    savePersisted();
   }
 
   function addXP(amount) {
@@ -759,12 +779,48 @@
     }
   }
 
-  // Cross-device sync actions
+  // Cross-device sync actions: Instant Cloud Sync via Driver ID (e.g. CNH-6L7Y)
+  async function saveProgressToCloud() {
+    if (!window.cnhSync) return;
+    const btn = document.getElementById('btn-save-cloud');
+    if (btn) btn.textContent = 'Salvando na Nuvem... ⏳';
+
+    const ok = await window.cnhSync.pushToCloud();
+    if (btn) btn.textContent = 'Salvar Progresso na Nuvem ☁️';
+
+    if (ok) {
+      alert(`✅ Progresso salvo na nuvem com o seu ID: ${window.cnhSync.getUserCode()}!\n\nAgora no seu outro aparelho basta clicar em "Sincronizar com ID" e digitar este mesmo ID.`);
+    } else {
+      alert('⚠️ Falha temporária ao conectar à nuvem. Copie o código de emergência abaixo para transferir.');
+      copySyncPayload();
+    }
+  }
+
+  async function loadProgressFromCloud() {
+    if (!window.cnhSync) return;
+    const myCode = window.cnhSync.getUserCode();
+    const inputCode = prompt('Digite o ID de Condutor do aparelho de onde deseja puxar o progresso:', myCode);
+    if (!inputCode) return;
+
+    const btn = document.getElementById('btn-load-cloud');
+    if (btn) btn.textContent = 'Baixando... ⏳';
+
+    const res = await window.cnhSync.pullFromCloud(inputCode);
+    if (btn) btn.textContent = 'Sincronizar com ID de Outro Aparelho 📲';
+
+    if (res.success) {
+      alert(`🎉 Progresso do ID ${inputCode.toUpperCase()} sincronizado com sucesso!\nRecarregando para atualizar seus módulos e conquistas...`);
+      window.location.reload();
+    } else {
+      alert(`❌ ${res.error || 'Não foi possível encontrar o progresso para este ID.'}`);
+    }
+  }
+
   function copySyncPayload() {
     if (!window.cnhSync) return;
     const str = window.cnhSync.exportProgressPayload();
     navigator.clipboard.writeText(str).then(() => {
-      alert('Código de progresso copiado! Cole no seu outro aparelho para sincronizar.');
+      alert('Código de segurança copiado! Cole no outro aparelho se não tiver conexão direta.');
     }).catch(() => {
       prompt('Copie o código abaixo:', str);
     });
@@ -812,6 +868,8 @@
     nextQuestion,
     renderPlacasCatalog,
     toggleOnlyUnmastered,
+    saveProgressToCloud,
+    loadProgressFromCloud,
     copySyncPayload,
     applySyncPayload
   };

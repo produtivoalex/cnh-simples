@@ -335,18 +335,21 @@
         </div>
         <div id="missions-list"></div>
 
-        <!-- Seção de Sincronização entre Aparelhos (Celular & PC) -->
+        <!-- Seção de Sincronização entre Aparelhos (Celular & PC via ID de Condutor) -->
         <div class="setup-box" style="margin-top: 15px;">
-          <div class="setup-label">📲 Sincronizar Celular & Computador</div>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
-            Seu ID de Condutor: <strong id="user-sync-code" style="color: #FBBF24;">CNH-7492</strong>
+          <div class="setup-label">📲 Sincronizar via ID de Condutor</div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+            Seu ID de Condutor: <strong id="user-sync-code" style="color: #FBBF24; font-size: 1.05rem; letter-spacing: 1px;">CNH-6L7Y</strong>
           </p>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-play-primary" style="padding: 10px; font-size: 0.85rem;" onclick="window.cnhApp.copySyncPayload()">
-              Copiar Progresso 📋
+          <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.35;">
+            Basta salvar na nuvem com 1 clique e digitar seu ID no seu celular ou computador para continuar de onde parou.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button id="btn-save-cloud" class="btn-play-primary" style="padding: 11px; font-size: 0.86rem;" onclick="window.cnhApp.saveProgressToCloud()">
+              Salvar Progresso na Nuvem ☁️
             </button>
-            <button class="selector-btn" style="padding: 10px; font-size: 0.85rem; border: 1px solid var(--surface-border);" onclick="window.cnhApp.applySyncPayload()">
-              Importar no outro aparelho 📥
+            <button id="btn-load-cloud" class="selector-btn" style="padding: 11px; font-size: 0.86rem; border: 1px solid rgba(16, 185, 129, 0.35); color: #34D399;" onclick="window.cnhApp.loadProgressFromCloud()">
+              Sincronizar com ID de Outro Aparelho 📲
             </button>
           </div>
         </div>

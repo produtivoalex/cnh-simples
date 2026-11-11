@@ -1,12 +1,13 @@
-// CNH Simples - Sync Engine (Universal Cross-Device Progress: Sync Code + Local Cloud Sync)
+// CNH Simples - Sync Engine (Instant ID-Only Cloud Sync + Portable Payload Fallback)
 
 (function () {
   'use strict';
 
-  const SYNC_SERVER_URL = 'https://api.jsonbin.io/v3/b'; // Or generic lightweight cloud state
+  // Cloud Topic Prefix for Zero-Config ID Sync
+  const TOPIC_PREFIX = 'cnh_simples_sync_';
 
   const sync = {
-    // Generate an easy 6-digit or short alphanumeric code like "CNH-7492"
+    // Generate an easy 4-character driver alphanumeric code like "CNH-6L7Y"
     generateUserCode() {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = 'CNH-';
@@ -22,7 +23,7 @@
         code = this.generateUserCode();
         localStorage.setItem('cnh_user_code', code);
       }
-      return code;
+      return code.trim().toUpperCase();
     },
 
     setUserCode(newCode) {
@@ -32,34 +33,100 @@
       return true;
     },
 
-    // Export complete progress bundle as a portable string
-    exportProgressPayload() {
-      const payload = {
+    getCloudTopic(code) {
+      const clean = (code || this.getUserCode()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      return `${TOPIC_PREFIX}${clean}`;
+    },
+
+    // Collect current local progress
+    getLocalPayload() {
+      return {
         code: this.getUserCode(),
-        stats: JSON.parse(localStorage.getItem('cnh_stats_v4') || '{}'),
-        difficulty: JSON.parse(localStorage.getItem('cnh_user_difficulty_v4') || '{}'),
-        achievements: JSON.parse(localStorage.getItem('cnh_achievements_v4') || '[]'),
+        stats: JSON.parse(localStorage.getItem('cnh_stats_v4') || localStorage.getItem('cnh_stats_v3') || '{}'),
+        difficulty: JSON.parse(localStorage.getItem('cnh_user_difficulty_v4') || localStorage.getItem('cnh_user_difficulty_v3') || '{}'),
+        achievements: JSON.parse(localStorage.getItem('cnh_achievements_v4') || localStorage.getItem('cnh_achievements_v3') || '[]'),
         mastered: JSON.parse(localStorage.getItem('cnh_mastered_qs_v4') || '[]'),
         timestamp: Date.now()
       };
+    },
+
+    // Apply data directly to localStorage
+    applyPayload(data) {
+      if (!data || !data.stats) return false;
+      if (data.code) localStorage.setItem('cnh_user_code', data.code);
+      if (data.stats) localStorage.setItem('cnh_stats_v4', JSON.stringify(data.stats));
+      if (data.difficulty) localStorage.setItem('cnh_user_difficulty_v4', JSON.stringify(data.difficulty));
+      if (data.achievements) localStorage.setItem('cnh_achievements_v4', JSON.stringify(data.achievements));
+      if (data.mastered) localStorage.setItem('cnh_mastered_qs_v4', JSON.stringify(data.mastered));
+      return true;
+    },
+
+    // 1. PUSH PROGRESS TO CLOUD USING JUST DRIVER ID
+    async pushToCloud(customCode = null) {
+      const code = customCode || this.getUserCode();
+      const topic = this.getCloudTopic(code);
+      const payload = this.getLocalPayload();
+      payload.code = code;
+
+      try {
+        const resp = await fetch(`https://ntfy.sh/${topic}`, {
+          method: 'POST',
+          headers: {
+            'Title': `Progresso CNH Simples ${code}`,
+            'Tags': 'car,white_check_mark'
+          },
+          body: JSON.stringify(payload)
+        });
+        return resp.ok;
+      } catch (e) {
+        console.warn('Sync push error:', e);
+        return false;
+      }
+    },
+
+    // 2. PULL PROGRESS FROM CLOUD USING JUST DRIVER ID
+    async pullFromCloud(targetCode) {
+      if (!targetCode) return { success: false, error: 'Código não informado' };
+      const code = targetCode.trim().toUpperCase();
+      const topic = this.getCloudTopic(code);
+
+      try {
+        const resp = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+        if (!resp.ok) return { success: false, error: 'Falha ao conectar à nuvem' };
+
+        const text = await resp.text();
+        const lines = text.trim().split('\n').filter(Boolean);
+        if (lines.length === 0) {
+          return { success: false, error: `Nenhum progresso encontrado na nuvem para o ID ${code}. Salve seu progresso no aparelho de origem primeiro!` };
+        }
+
+        // Get the latest message
+        const lastMsg = JSON.parse(lines[lines.length - 1]);
+        const payload = typeof lastMsg.message === 'string' ? JSON.parse(lastMsg.message) : lastMsg.message;
+
+        if (payload && payload.stats) {
+          this.applyPayload(payload);
+          return { success: true, payload };
+        }
+        return { success: false, error: 'Formato de progresso corrompido' };
+      } catch (e) {
+        console.error('Sync pull error:', e);
+        return { success: false, error: e.message || 'Erro de comunicação' };
+      }
+    },
+
+    // Portable string export fallback
+    exportProgressPayload() {
+      const payload = this.getLocalPayload();
       return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     },
 
-    // Import progress bundle string
+    // Portable string import fallback
     importProgressPayload(encodedStr) {
       try {
         const jsonStr = decodeURIComponent(escape(atob(encodedStr.trim())));
         const data = JSON.parse(jsonStr);
-
-        if (!data.stats) throw new Error('Dados inválidos');
-
-        if (data.code) localStorage.setItem('cnh_user_code', data.code);
-        if (data.stats) localStorage.setItem('cnh_stats_v4', JSON.stringify(data.stats));
-        if (data.difficulty) localStorage.setItem('cnh_user_difficulty_v4', JSON.stringify(data.difficulty));
-        if (data.achievements) localStorage.setItem('cnh_achievements_v4', JSON.stringify(data.achievements));
-        if (data.mastered) localStorage.setItem('cnh_mastered_qs_v4', JSON.stringify(data.mastered));
-
-        return true;
+        return this.applyPayload(data);
       } catch (e) {
         console.error('Import error:', e);
         return false;
