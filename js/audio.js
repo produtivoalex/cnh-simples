@@ -119,6 +119,22 @@
         osc.start(now);
         osc.stop(now + 0.38);
       } catch (e) {}
+    },
+
+    // 📳 Feedback Tátil (Haptics via navigator.vibrate)
+    vibrate(type = 'tap') {
+      try {
+        if (!('vibrate' in navigator)) return;
+        if (type === 'tap') {
+          navigator.vibrate(25); // Toque sutil de clique
+        } else if (type === 'success') {
+          navigator.vibrate(40); // Acerto firme
+        } else if (type === 'wrong') {
+          navigator.vibrate([40, 60, 50]); // Vibração dupla de alerta ao errar
+        } else if (type === 'finish') {
+          navigator.vibrate([60, 80, 60, 80, 100]); // Comemoração de conclusão
+        }
+      } catch (e) {}
     }
   };
 

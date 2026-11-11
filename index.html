@@ -66,6 +66,24 @@
           </div>
         </div>
 
+        <!-- Banner Oficial do Simulado Detran -->
+        <div class="simulado-detran-banner" onclick="window.cnhApp.startDetranOfficialSimulado()">
+          <div class="detran-badge-row">
+            <span class="detran-badge-pill">OFICIAL SENATRAN</span>
+            <span class="detran-badge-timer">⏳ 50 MINUTOS</span>
+          </div>
+          <div class="detran-banner-body">
+            <div class="detran-banner-left">
+              <h3 class="detran-banner-title">Simulado Oficial Detran</h3>
+              <p class="detran-banner-desc">30 questões com regra oficial: 70% (21 acertos) para aprovação.</p>
+            </div>
+            <div class="detran-banner-btn">
+              <span>Iniciar Prova</span>
+              <span>➔</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Seletor Rápido de Questões (10, 20, 30) -->
         <div class="setup-box">
           <div class="setup-label">Escolha o tamanho do treino</div>
@@ -138,6 +156,9 @@
                 </div>
               </div>
             </div>
+            <div class="module-action-row">
+              <span class="module-action-btn">Praticar este Módulo (10 q.) ➔</span>
+            </div>
           </div>
 
           <!-- Módulo 2 -->
@@ -168,6 +189,9 @@
                   <div id="mod2-bar-acc" class="module-bar-fill-acc"></div>
                 </div>
               </div>
+            </div>
+            <div class="module-action-row">
+              <span class="module-action-btn">Praticar este Módulo (10 q.) ➔</span>
             </div>
           </div>
 
@@ -200,6 +224,9 @@
                 </div>
               </div>
             </div>
+            <div class="module-action-row">
+              <span class="module-action-btn">Praticar este Módulo (10 q.) ➔</span>
+            </div>
           </div>
 
           <!-- Módulo 4 -->
@@ -231,6 +258,10 @@
                 </div>
               </div>
             </div>
+            <div class="module-action-row">
+              <span class="module-action-btn">Praticar este Módulo (10 q.) ➔</span>
+            </div>
+          </div>
           </div>
         </div>
 
@@ -238,6 +269,18 @@
         <div class="modes-title">
           <span>Treinos Especiais</span>
           <span style="color: #34D399;">Foco Específico</span>
+        </div>
+
+        <!-- Caderno de Erros (Destaque Principal) -->
+        <div class="caderno-erros-card" onclick="window.cnhApp.startReviewMistakesSession()">
+          <div class="caderno-left">
+            <div class="caderno-icon">📕</div>
+            <div>
+              <div class="caderno-title">Caderno de Erros</div>
+              <div class="caderno-sub" id="caderno-erros-sub">Questões com falhas para você refazer até zerar</div>
+            </div>
+          </div>
+          <div class="caderno-badge" id="caderno-erros-count">0 pendentes</div>
         </div>
 
         <div class="modes-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;">

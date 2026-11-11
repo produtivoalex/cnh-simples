@@ -406,6 +406,174 @@ body {
   transform: scale(0.97);
 }
 
+/* Banner Oficial do Simulado Detran */
+.simulado-detran-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(37, 99, 235, 0.12) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 20px rgba(16, 185, 129, 0.12);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.simulado-detran-banner:hover {
+  border-color: var(--brazil-green);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 26px var(--brazil-green-glow);
+}
+
+.simulado-detran-banner:active {
+  transform: scale(0.98);
+}
+
+.detran-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.detran-badge-pill {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  color: #070B12;
+  background: var(--brazil-green);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.detran-badge-timer {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #F87171;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.detran-banner-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detran-banner-left {
+  flex: 1;
+}
+
+.detran-banner-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.detran-banner-desc {
+  font-size: 0.76rem;
+  color: #CBD5E1;
+  line-height: 1.35;
+}
+
+.detran-banner-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #A7F3D0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Caderno de Erros */
+.caderno-erros-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(14, 22, 38, 0.9) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.caderno-erros-card:hover {
+  border-color: var(--danger);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+}
+
+.caderno-erros-card:active {
+  transform: scale(0.98);
+}
+
+.caderno-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.caderno-icon {
+  font-size: 1.4rem;
+}
+
+.caderno-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.caderno-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.caderno-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* Ação rápida dentro do card do módulo */
+.module-action-row {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.module-action-btn {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--brazil-green);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  transition: background 0.15s ease;
+}
+
+.module-track-card:hover .module-action-btn {
+  background: var(--brazil-green);
+  color: #070B12;
+}
+
 /* Modes Grid & Module Cards */
 .modes-title {
   font-size: 0.82rem;
@@ -817,10 +985,25 @@ body {
 .feedback-status.wrong { color: var(--danger); }
 
 .feedback-explanation {
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: #D1D5DB;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #E2E8F0;
   margin-bottom: 14px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.feedback-badge-row {
+  margin-bottom: 6px;
+  display: flex;
+}
+
+.feedback-text-content {
+  color: #CBD5E1;
+  font-size: 0.83rem;
+  line-height: 1.45;
 }
 
 .feedback-repeat-notice {

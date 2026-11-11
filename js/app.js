@@ -45,16 +45,35 @@
     { id: 'speed_demon', title: 'Rápido no Gatilho', desc: 'Completou um treino de 10 questões', icon: '⏱️', xp: 80 }
   ];
 
-  // Sounds
+  // Sounds & Haptics
   const soundfx = {
     playCorrect() {
-      if (window.trafficAudio) window.trafficAudio.playCarHorn();
+      if (window.trafficAudio) {
+        window.trafficAudio.playCarHorn();
+        window.trafficAudio.vibrate('success');
+      }
     },
     playWrong() {
-      if (window.trafficAudio) window.trafficAudio.playBrakeScreech();
+      if (window.trafficAudio) {
+        window.trafficAudio.playBrakeScreech();
+        window.trafficAudio.vibrate('wrong');
+      }
     },
     playStart() {
-      if (window.trafficAudio) window.trafficAudio.playEngineStart();
+      if (window.trafficAudio) {
+        window.trafficAudio.playEngineStart();
+        window.trafficAudio.vibrate('tap');
+      }
+    },
+    playTap() {
+      if (window.trafficAudio) {
+        window.trafficAudio.vibrate('tap');
+      }
+    },
+    playFinish() {
+      if (window.trafficAudio) {
+        window.trafficAudio.vibrate('finish');
+      }
     }
   };
 
@@ -223,6 +242,20 @@
       if (barDone) barDone.style.width = `${pctDone}%`;
       if (barAcc) barAcc.style.width = `${pctAcc}%`;
     });
+
+    // Atualiza contadores do Caderno de Erros na tela inicial
+    const pendingErrors = getPendingErrorsList();
+    const mistakesCountEl = document.getElementById('caderno-erros-count');
+    const mistakesSubEl = document.getElementById('caderno-erros-sub');
+    if (mistakesCountEl) {
+      mistakesCountEl.textContent = `${pendingErrors.length} pendentes`;
+      mistakesCountEl.style.color = pendingErrors.length > 0 ? '#F87171' : '#34D399';
+    }
+    if (mistakesSubEl) {
+      mistakesSubEl.textContent = pendingErrors.length > 0 
+        ? `${pendingErrors.length} questões com erros aguardando revisão`
+        : 'Zero erros pendentes! Você limpou seu caderno.';
+    }
 
     const chk = document.getElementById('chk-only-unmastered');
     if (chk) chk.checked = !!state.onlyUnmastered;
@@ -460,8 +493,100 @@
     });
   }
 
-  function startSession(title, filterCategory = null, onlyPlates = false) {
+  function getPendingErrorsList() {
+    const list = [];
+    const qById = {};
+    state.questions.forEach(q => { qById[q.id] = q; });
+    const masteredSet = new Set(state.masteredQuestionIds || []);
+
+    Object.entries(state.userDifficulty || {}).forEach(([qidStr, fails]) => {
+      const qid = parseInt(qidStr, 10);
+      if (fails > 0 && !masteredSet.has(qid) && qById[qid]) {
+        list.push(qById[qid]);
+      }
+    });
+    return list;
+  }
+
+  function startReviewMistakesSession() {
+    const mistakes = getPendingErrorsList();
+    if (mistakes.length === 0) {
+      alert('🎉 Parabéns! Você não tem nenhum erro pendente no seu Caderno de Erros!');
+      return;
+    }
     soundfx.playStart();
+    const queue = mistakes.sort(() => Math.random() - 0.5);
+
+    state.session = {
+      title: 'Caderno de Erros (Revisão Focada)',
+      queue: queue,
+      currentIndex: 0,
+      totalInitial: queue.length,
+      correctCount: 0,
+      mistakesCount: 0,
+      timerSeconds: 0,
+      remainingSeconds: queue.length * 90,
+      completed: false,
+      consecutiveCorrect: 0,
+      isMistakesReview: true
+    };
+
+    savePersisted();
+    switchView('quiz');
+    startTimer();
+    renderQuestion();
+  }
+
+  function startDetranOfficialSimulado() {
+    soundfx.playStart();
+    const queue = generateDetranSimuladoQueue();
+
+    state.session = {
+      title: 'Simulado Oficial Detran (30 Questões)',
+      queue: queue,
+      currentIndex: 0,
+      totalInitial: 30,
+      correctCount: 0,
+      mistakesCount: 0,
+      timerSeconds: 0,
+      remainingSeconds: 50 * 60, // 50 minutos oficiais
+      completed: false,
+      consecutiveCorrect: 0,
+      isOfficialDetran: true,
+      answersMap: {} // { [index]: selectedOptionIdx }
+    };
+
+    savePersisted();
+    switchView('quiz');
+    startTimer();
+    renderQuestion();
+  }
+
+  function generateDetranSimuladoQueue() {
+    // 30 questões na distribuição oficial do exame nacional
+    const modQuotas = [
+      { key: 'defensiva', count: 12 },                     // 12 de Direção Defensiva
+      { key: 'sinalizacao', count: 8 },                    // 8 de Sinalização / Normas
+      { key: 'infracoes', count: 5 },                      // 5 de Legislação e Infrações
+      { key: 'socorros_mecanica_meioambiente', count: 5 }  // 5 de Socorros / Mecânica / Meio Ambiente
+    ];
+
+    let combined = [];
+    modQuotas.forEach(spec => {
+      const qs = state.questions.filter(q => q.category === spec.key && !q.is_variant);
+      const shuffled = [...qs].sort(() => Math.random() - 0.5);
+      combined = combined.concat(shuffled.slice(0, spec.count));
+    });
+
+    if (combined.length < 30) {
+      const rest = state.questions.filter(q => !combined.includes(q)).sort(() => Math.random() - 0.5);
+      combined = combined.concat(rest.slice(0, 30 - combined.length));
+    }
+
+    return combined.sort(() => Math.random() - 0.5);
+  }
+
+  function startSession(title, filterCategory = null, onlyPlates = false) {
     const queue = generateSessionQueue(state.selectedSize, filterCategory, onlyPlates);
 
     // Initial countdown based on question count (10 qs = 15m, 20 qs = 30m, 30 qs = 50m oficial Detran)
@@ -653,13 +778,19 @@
     const fbRepeat = document.getElementById('feedback-repeat-notice');
 
     fbStatus.className = `feedback-status ${isCorrect ? 'correct' : 'wrong'}`;
-    fbStatus.innerHTML = isCorrect ? '🚗 Bi-bi! Resposta Correta! (+10 XP)' : '🛑 Frenagem! Não foi dessa vez!';
+    fbStatus.innerHTML = isCorrect ? '<span>🚗</span><span>Bi-bi! Resposta Correta! (+10 XP)</span>' : '<span>🛑</span><span>Frenagem! Não foi dessa vez!</span>';
 
-    fbExp.innerHTML = `<strong>Fundamentação:</strong> ${q.explanation || 'Conforme as normas do CTB e Resoluções vigentes do CONTRAN.'}`;
+    const rawExp = q.explanation || 'Conforme as normas do CTB e Resoluções vigentes do CONTRAN.';
+    fbExp.innerHTML = `
+      <div class="feedback-badge-row">
+        <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.35);">📜 Fundamentação Legal</span>
+      </div>
+      <div class="feedback-text-content">${rawExp}</div>
+    `;
 
     if (willRepeat) {
       fbRepeat.style.display = 'block';
-      fbRepeat.textContent = '🔄 Esta questão voltará ao final da rodada para você repetir até acertar!';
+      fbRepeat.textContent = '🔄 Esta questão voltará ao final da rodada para você repetir até fixar o conteúdo!';
     } else {
       fbRepeat.style.display = 'none';
     }
@@ -684,28 +815,43 @@
     checkAchievement('first_play');
     if (sess.totalInitial === 10) checkAchievement('speed_demon');
 
-    addXP(30);
+    addXP(sess.isOfficialDetran ? 50 : 30);
+    soundfx.playFinish();
 
     const timeSpent = sess.timerSeconds;
     const m = Math.floor(timeSpent / 60);
     const s = timeSpent % 60;
     const timeFormatted = `${m}m ${s}s`;
 
+    const total = sess.totalInitial;
+    const correct = sess.correctCount;
+    const mistakes = sess.mistakesCount;
+    const pct = Math.round((correct / (correct + mistakes)) * 100) || 0;
+    const isDetran = !!sess.isOfficialDetran;
+    const passed = isDetran ? (correct >= 21) : (pct >= 70);
+
     state.session = null;
     savePersisted();
 
-    const total = sess.totalInitial;
-    const correct = sess.correctCount;
-    const pct = Math.round((correct / (correct + sess.mistakesCount)) * 100) || 0;
-    const passed = pct >= 70;
+    const headingEl = document.getElementById('res-heading');
+    const subheadingEl = document.getElementById('res-subheading');
 
-    document.getElementById('res-heading').textContent = passed ? 'Gabaritou! 🚗💨' : 'Treino Concluído! 🎯';
-    document.getElementById('res-subheading').textContent = passed 
-      ? `Você teve ${pct}% de precisão em ${timeFormatted}. Se fizer a prova hoje, está aprovado!`
-      : `Você repetiu todas as questões que errou até fixar o conteúdo. Tempo: ${timeFormatted}.`;
+    if (isDetran) {
+      headingEl.textContent = passed ? 'APROVADO NO DETRAN! 🏆🚗' : 'NÃO FOI DESSA VEZ! 🛑';
+      headingEl.style.color = passed ? 'var(--brazil-green)' : 'var(--danger)';
+      subheadingEl.textContent = passed 
+        ? `Você acertou ${correct} de 30 questões (${pct}%) em ${timeFormatted}. Critério oficial do Detran atingido (mínimo de 21 acertos)!`
+        : `Você acertou ${correct} de 30 questões (${pct}%). Para ser aprovado no Detran são necessários 21 acertos (70%). Refaça os erros no seu Caderno de Erros!`;
+    } else {
+      headingEl.textContent = passed ? 'Gabaritou! 🚗💨' : 'Treino Concluído! 🎯';
+      headingEl.style.color = passed ? 'var(--brazil-green)' : '#FFFFFF';
+      subheadingEl.textContent = passed 
+        ? `Você teve ${pct}% de precisão em ${timeFormatted}. Se fizer a prova hoje, está aprovado!`
+        : `Você repetiu todas as questões que errou até fixar o conteúdo. Tempo: ${timeFormatted}.`;
+    }
 
     document.getElementById('kpi-acertos').textContent = `${correct}`;
-    document.getElementById('kpi-erros').textContent = `${sess.mistakesCount}`;
+    document.getElementById('kpi-erros').textContent = `${mistakes}`;
     document.getElementById('kpi-tempo').textContent = timeFormatted;
 
     switchView('result');
@@ -859,6 +1005,8 @@
     switchView,
     selectSize,
     startSession,
+    startDetranOfficialSimulado,
+    startReviewMistakesSession,
     resumeSession,
     nextQuestion,
     renderPlacasCatalog,
