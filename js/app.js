@@ -111,10 +111,10 @@
       // MIGRAÇÃO / RECONSTITUIÇÃO INTELIGENTE DO HISTÓRICO:
       reconstitutePastProgress();
 
-      const unmasteredPref = localStorage.getItem(STORAGE_KEY_ONLY_UNMASTERED);
-      if (unmasteredPref !== null) {
-        state.onlyUnmastered = JSON.parse(unmasteredPref);
-      }
+      // Atualiza dias seguidos de estudo (Streak)
+      updateDailyStreak();
+
+      state.onlyUnmastered = true; // Padrão definitivo: sempre prioriza inéditas e erros
 
       let sess = localStorage.getItem(STORAGE_KEY_SESSION);
       if (!sess) sess = localStorage.getItem('cnh_active_session_v3');
@@ -139,6 +139,33 @@
     } catch (e) {
       console.warn('Persistence save error:', e);
     }
+  }
+
+  function updateDailyStreak() {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const lastStudy = state.userStats.lastStudyDate;
+
+      if (!lastStudy) {
+        state.userStats.lastStudyDate = today;
+        if (!state.userStats.streak || state.userStats.streak < 1) state.userStats.streak = 1;
+      } else if (lastStudy !== today) {
+        const lastDate = new Date(lastStudy);
+        const currDate = new Date(today);
+        const diffDays = Math.round((currDate - lastDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+          // Estudou no dia seguinte consecutivo! Aumenta o streak
+          state.userStats.streak = (state.userStats.streak || 1) + 1;
+          state.userStats.lastStudyDate = today;
+        } else if (diffDays > 1) {
+          // Passou mais de 1 dia, reinicia o streak para 1
+          state.userStats.streak = 1;
+          state.userStats.lastStudyDate = today;
+        }
+      }
+      if (state.userStats.streak >= 3) checkAchievement('streak_3');
+    } catch (e) {}
   }
 
   // Reconstrói o progresso estritamente com base nos dados reais do usuário (sem estimativas artificiais)

@@ -66,19 +66,19 @@
           </div>
         </div>
 
-        <!-- Banner Oficial do Simulado Detran -->
+        <!-- Banner do Simulado Prova Real Detran -->
         <div class="simulado-detran-banner" onclick="window.cnhApp.startDetranOfficialSimulado()">
           <div class="detran-badge-row">
-            <span class="detran-badge-pill">OFICIAL SENATRAN</span>
+            <span class="detran-badge-pill">PADRÃO PROVA DETRAN</span>
             <span class="detran-badge-timer">⏳ 50 MINUTOS</span>
           </div>
           <div class="detran-banner-body">
             <div class="detran-banner-left">
-              <h3 class="detran-banner-title">Simulado Oficial Detran</h3>
-              <p class="detran-banner-desc">30 questões com regra oficial: 70% (21 acertos) para aprovação.</p>
+              <h3 class="detran-banner-title">Simulado Prova Real</h3>
+              <p class="detran-banner-desc">30 questões com o mesmo formato, tempo e regra: 70% (21 acertos) para aprovação.</p>
             </div>
             <div class="detran-banner-btn">
-              <span>Iniciar Prova</span>
+              <span>Iniciar Simulado</span>
               <span>➔</span>
             </div>
           </div>
@@ -102,19 +102,7 @@
             </button>
           </div>
 
-          <!-- Filtro: Apenas Inéditas / Não acertadas -->
-          <div style="margin-top: 14px; padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="window.cnhApp.toggleOnlyUnmastered()">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.1rem;">⚡</span>
-              <div>
-                <div style="font-size: 0.82rem; font-weight: 700; color: #FFFFFF;">Priorizar Questões Inéditas / com Erros</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted);">Não repetir questões que você já dominou</div>
-              </div>
-            </div>
-            <input type="checkbox" id="chk-only-unmastered" checked style="accent-color: var(--brazil-green); width: 18px; height: 18px; cursor: pointer;" onclick="event.stopPropagation(); window.cnhApp.toggleOnlyUnmastered();"/>
-          </div>
-
-          <button class="btn-play-primary" style="margin-top: 12px;" onclick="window.cnhApp.startSession('Treino Inteligente')">
+          <button class="btn-play-primary" style="margin-top: 14px;" onclick="window.cnhApp.startSession('Treino Inteligente')">
             <span>Iniciar Treino Desafio</span>
             <span>🚗💨</span>
           </button>

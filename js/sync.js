@@ -110,18 +110,29 @@
         const payload = typeof lastMsg.message === 'string' ? JSON.parse(lastMsg.message) : lastMsg.message;
 
         if (payload && payload.stats) {
-          const localTs = parseInt(localStorage.getItem('cnh_last_sync_ts') || '0', 10);
-          const cloudTs = payload.timestamp || 0;
+          // Mescla de forma inteligente (Union) para nunca perder nada de XP ou questões:
+          const localStats = JSON.parse(localStorage.getItem('cnh_stats_v4') || localStorage.getItem('cnh_stats_v3') || '{}');
+          const localMastered = JSON.parse(localStorage.getItem('cnh_mastered_qs_v4') || '[]');
+          const cloudMastered = payload.mastered || [];
+          const combinedMastered = Array.from(new Set([...localMastered, ...cloudMastered]));
 
-          // Se a nuvem tiver dados mais novos ou com mais questões respondidas, atualiza
-          const localTotal = JSON.parse(localStorage.getItem('cnh_stats_v4') || '{}').totalAnswered || 0;
-          const cloudTotal = payload.stats.totalAnswered || 0;
+          const localXP = localStats.xp || 0;
+          const cloudXP = (payload.stats && payload.stats.xp) || 0;
 
-          if (cloudTs > localTs || cloudTotal > localTotal) {
-            this.applyPayload(payload);
-            return { success: true, updated: true, payload };
-          }
-          return { success: true, updated: false, payload };
+          const mergedStats = {
+            ...(payload.stats || {}),
+            xp: Math.max(localXP, cloudXP),
+            streak: Math.max(localStats.streak || 1, (payload.stats && payload.stats.streak) || 1),
+            totalCorrect: Math.max(localStats.totalCorrect || 0, combinedMastered.length),
+            totalAnswered: Math.max(localStats.totalAnswered || 0, (payload.stats && payload.stats.totalAnswered) || 0, combinedMastered.length)
+          };
+          mergedStats.level = Math.floor(Math.sqrt(mergedStats.xp / 100)) + 1;
+
+          payload.stats = mergedStats;
+          payload.mastered = combinedMastered;
+
+          this.applyPayload(payload);
+          return { success: true, updated: true, payload };
         }
         return { success: false, error: 'Formato de progresso corrompido' };
       } catch (e) {
